@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DMI Beleidsanalyse</title>
+<style>
+ body {
+   font-family: "Aptos", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+   margin: 24px;
+   color: #540932; /* default dark text */
+ }
+ h1 {
+   font-size: 19px;
+   margin-bottom: 8px;
+   color: #540932;
+ }
+ .layout { display: grid; grid-template-columns: 460px 1fr; gap: 20px; align-items: start; }
+ .layout > .panel:last-child {position: sticky; top: 20px;   /* space from top when sticking */ height: fit-content; /* shrink-wrap around the diagram */}
+ .layout > .panel:first-child {max-height: 100vh; overflow-y: auto;}
+ .panel { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px; background: #fff; color: #540932; }
+ .controls { display: grid; grid-template-columns: repeat(2,minmax(180px,1fr)); gap: 10px; align-items: end; margin-bottom: 10px; }
+ label { display: block; font-size: 10px; margin-bottom: 4px; color: #540932; }
+
+ select, input[type=text] {
+   width: 100%;
+   padding: 8px;
+   border-radius: 8px;
+   border: 1px solid #bbb;
+   font-family: "Aptos", system-ui, sans-serif;
+   color: #540932;
+ }
+ .checkboxes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+ .checkboxes label { font-size: 12px; color: #540932; }
+ .pill { border-radius: 999px; padding: 4px 8px; border: 1px solid #ccc; font-size: 12px; background: #f7f7f7; color: #540932; }
+ .row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+ .card { border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: #fff; color: #540932; }
+ .muted { color: #540932; font-size: 12px; }
+ .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #ddd; margin-right: 6px; font-size: 12px; color: #540932; }
+ #chart { width: 100%; height: 820px; }
+ .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; color: #540932; }
+ .legend .item { display: flex; align-items: center; gap: 6px; color: #540932; }
+ .swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.2); }
+ .mutep { margin: 6px 0 0; font-size: 12px; color: #540932; }
+ .tooltip { 
+   position: fixed; pointer-events: none;
+   background: rgba(30,30,30,.92);
+   color: #fff; /* keep white text for readability */
+   padding: 6px 8px;
+   border-radius: 6px; font-size: 12px;
+   z-index: 10; transform: translate(10px,10px);
+   font-family: "Aptos", system-ui, sans-serif;
+ }
+ .count { font-weight: 600; color: #540932; }
+ .actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+ button { 
+   padding: 6px 10px;
+   border-radius: 8px;
+   border: 1px solid #bbb;
+   background: #f7f7f7;
+   cursor: pointer;
+   font-family: "Aptos", system-ui, sans-serif;
+   color: #540932;
+ }
+ button:hover { background: #eee; }
+ 
+ /* All SVG text (theme, subtheme, ambitions) */
+ svg text {
+   font-family: "Aptos", sans-serif;
+   fill: #540932; /* dark labels get corporate purple */
+ }
+</style></head>
+<body>
+<h1>DMI Beleidsanalyse</h1>
+<div class="layout">
+  <div class="panel">
+    <div class="controls">
+      <div><label for="thema">Theme</label><select id="thema"><option value="">All themes</option></select></div>
+      <div><label for="sub">Sub-theme</label><select id="sub"><option value="">All sub-themes</option></select></div>
+      <div style="grid-column: span 2;">
+        <label>Scale filter</label>
+        <div class="checkboxes" id="scales"></div>
+      </div>
+      <div style="grid-column: span 2;">
+        <label for="q">Search text</label><input type="text" id="q" placeholder="Search ambition text…"/>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="count" id="count"></div>
+      <button id="reset">Reset filters</button>
+      <button id="export">Export CSV (current filter)</button>
+    </div>
+    <p class="mutep">Tip: hover the chart to preview; click a theme to focus or an ambition to filter the list.</p>
+    <div id="list"></div>
+  </div>
+  <div class="panel">
+    <div id="chart"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<script>
+let viewHistory = [];
+const DATA = {"records": [{"thema": "Milieu, natuur en ecologie", "subthema": "Biodiversiteit", "ambitie": "Biodiversiteit beschermen en vergroten (binnen natuurgebieden maar ook in de stad)", "scales_yes": ["gm", "pv", "nl", "eu", "gl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Biodiversiteit", "ambitie": "Herstellen en behouden van bestuiverpopulaties en stimuleren van de toename van wilde populaties", "scales_yes": ["gm", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Biodiversiteit", "ambitie": "Voorkomen verspreiding van ziekten en plagen onder dieren en planten", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Bodemdaling remmen en zoveel mogelijk stoppen, beperken verzakkingsschade ", "scales_yes": ["gm", "pv", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Herstellen van de bodem en verbeteren van de bodemstructuur", "scales_yes": ["gm", "pv", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "De bodem zo min mogelijk afdekken (overbodige verharding verwijderen)", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Hoogwaardig hergebruik van de bodem mogelijk maken", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "De bodem minder ontgraven", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Transitie van landbouw naar natuur mogelijk maken in gebieden met sterke bodemdaling ", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Het gebruik chemische pesticiden in de bodem halveren", "scales_yes": ["nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Bodemkwaliteit", "ambitie": "Verliezen van voedingsstoffen in de bodem halveren, met behoud van bodemvruchtbaarheid", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Ecologie", "ambitie": "Bescherming van de leefomgeving van planten en dieren", "scales_yes": ["gm", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Ecologie", "ambitie": "Ecologischer beheren en onderhouden van de openbare ruimte ", "scales_yes": ["gm", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Ecologie", "ambitie": "Herstellen van aangetaste habitats (20% in 2030, 100% in 2050)", "scales_yes": ["nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Ecologie", "ambitie": "Ecologische corridors creëren en versterken ten behoeve van soortenmigratie en gezonde ecosystemen", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landbouw", "ambitie": "Toekomstbestendige landbouw realiseren, die duurzaam economisch rendabel is binnen de planetaire grenzen", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landbouw", "ambitie": "Realiseren van hoogproductieve kringlooplandbouw", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landbouw", "ambitie": "Behouden van vruchtbare grond voor landbouw", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landbouw", "ambitie": "Biologische en diervriendelijke landbouw en veehouderij laten groeien", "scales_yes": ["pv", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Beschermen van cultuurhistorie en monumenten ", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Landschappelijke kwaliteiten beschermen en verbeteren", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Landschappelijk en cultureel erfgoed herstellen, versterken en investeren in de beleving ervan", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Archeologische waarden in de grond beschermen en behouden", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Het landschap aantrekkelijk maken en houden en beleving centraal stellen (door benutten van natuur, cultureel erfgoed en monumenten)", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Landschap, cultuurhistorie, erfgoed", "ambitie": "Realiseren van 10% groenblauwe dooradering in het buitengebied", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Luchtkwaliteit", "ambitie": "Voldoen aan WHO-advieswaarden voor luchtkwaliteit (stikstof en fijnstof)", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Luchtkwaliteit", "ambitie": "Het aantal plekken waar luchtvervuiling een dreiging voor de biodiversiteit vormt laten afnemen (met 25%)", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Luchtkwaliteit", "ambitie": "Schone lucht: in 2030 gemiddeld minimaal 50% gezondheidswinst t.o.v. 2016 voor de negatieve gezondheidseffecten van Nederlandse bronnen realiseren", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Luchtkwaliteit", "ambitie": "Luchtverontreiniging terugdringen tot nul", "scales_yes": ["nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Luchtkwaliteit", "ambitie": "Het aantal vroegtijdige doden door luchtvervuiling terugdringen (met 55%)", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Milieu", "ambitie": "Een gifvrij milieu realiseren (uiterlijk in 2050)", "scales_yes": ["nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Milieu", "ambitie": "Verminderen van microplastics in het milieu (met 30%)", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Milieu", "ambitie": "Weren van Zeer Zorgwekkende Stoffen (ZZS) uit de leefomgeving om schade aan mens en milieu te voorkomen", "scales_yes": ["gm", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Milieu", "ambitie": "Uitstoot van potentieel Zeer Zorgwekkende Stoffen (pZZS) beperken en voorkomen dat de als ZZS worden geclassificeerd", "scales_yes": ["gm", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Natuurinclusieve landbouw de ruimte geven", "scales_yes": ["pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Verbeteren staat van bestaande natuur: in 2030 30% van de afstand tussen de huidige staat van instandhouding van natuur en een gewenste, gunstige staat van instandhouding te overbruggen (30% overbrugging van de VHR-opgave)", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Een fijnmazig natuurnetwerk realiseren", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Afronden en versterken van Natuurnetwerk Nederland", "scales_yes": ["pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Herstel, bescherming en kwaliteitsverbetering van bestaande natuur", "scales_yes": ["pv", "nl", "eu", "gl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Goed toegankelijke landschappen, recreatie- en natuurgebieden", "scales_yes": ["pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Ontwikkeling van nieuwe natuur en uitbreiding van bestaande natuur (bossen en overige natuurgebieden)", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Recreatie en toerisme in balans en passend bij de omgeving en het landschap", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Natuurbeleving en betrokkenheid van mensen bij natuur versterken", "scales_yes": ["nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Toegankelijke recreatiegebieden rondom de stad bewerkstelligen", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Bomen planten: jaarlijkse toename van 1% van het aantal bomen", "scales_yes": ["gm", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Natuur", "ambitie": "Meer groenblauwe gebieden in de stad realiseren", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Stikstof", "ambitie": "Halveren van de stikstofuitstoot in 2035 t.o.v.2019", "scales_yes": ["pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Stikstof", "ambitie": "Bronmaatregelen nemen voor stikstof", "scales_yes": ["pv", "nl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Meer ruimte bieden aan het water", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Het watersysteem toekomstbestendig en klimaatrobuuster maken", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Beschikbaarheid van voldoende en kwalitatief goed zoet- en drinkwater waarborgen (met zo min mogelijk zuivering)", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Inname van gebiedsvreemd water (water met een kwaliteit die niet van nature voorkomt in een gebied) zoveel mogelijk vermijden", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Op orde houden en verhogen van het grondwaterpeil in het volledige watersysteem", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Kwaliteit van het grondwater verbeteren waar nodig", "scales_yes": ["gm", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Gebruiken van diep oppervlaktewater voor koudeopslag voor stadskoeling", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Rivieroevers natuurvriendelijk inrichten", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Verbinden van lokaal water (sloten, geulen, vijvers, wadi’s) met het regionale watersysteem", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Barrieres wegnemen voor vrij stromende rivieren en verbindingen tussen oppervlaktewateren", "scales_yes": ["eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Optimaal benutten van zoetwater voor de economie en landbouw: in balans met behoud goede waterkwaliteit", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Ruimte reserveren voor infiltratie en waterberging (voorraadwater tbv droogte en piekberging tbv wateroverlast)", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Innovatieve oplossingen voor waterberging (zoals wateropvang op gebouwen)", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Anticiperen op minder zoet oppervlaktewater en toenemende verzilting", "scales_yes": ["gm", "pv"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Regenwater op particuliere (bedrijfs-)terreinen vasthouden", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Hoogwaardig hergebruiken van hemelwater door te infiltreren, te bergen en vertraagd af te voeren.", "scales_yes": ["gm"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Chemische kwaliteit van grond- en oppervlaktewateren verbeteren en beschermen: minder schadelijke stoffen in het water ", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Ecologische kwaliteit van oppervlaktewater verbeteren en beschermen: gezonde en gevarieerde waternatuur", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Behouden, beschermen en duurzaam gebruiken van oceanen, zeeën en mariene hulpbronnen en ecosystemen", "scales_yes": ["eu", "gl"]}, {"thema": "Milieu, natuur en ecologie", "subthema": "Waterkwaliteit en -systeem", "ambitie": "Afval en plastic in zee verminderen me 50%", "scales_yes": ["eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Belevingswaarde leefomgeving", "ambitie": "Rookvrije kindomgevingen garanderen (speeltuinen, kinderboerderijen en sportclubs)", "scales_yes": ["gm", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Belevingswaarde leefomgeving", "ambitie": "Een gezonde voedselomgeving ontwikkelen: de gezonde keuze is de makkelijke keuze", "scales_yes": ["gm", "nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Bewegen", "ambitie": "Leefomgeving die uitnodigt tot bewegen (wandelen, fietsen, spelen, sporten)", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Bewegen", "ambitie": "Reserveren van voldoende ruimte voor speel-, beweeg-, sport- en ontmoetingsplekken (die zijn verbonden door groenblauwe routes)", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Bewegen", "ambitie": "Gezond en passend sport- en beweegaanbod dat meegroeit met de stad", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Bewegen", "ambitie": "Voor kinderen bereikbare speelplekken (binnen 200 meter, zonder een drukke straat over hoeven te steken)", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Bewegen", "ambitie": "Voorzien in toegankelijke voorzieningen in wijken en buurten ", "scales_yes": ["pv", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Geluidhinder", "ambitie": "Verbeteren van het akoestisch klimaat", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Geluidhinder", "ambitie": "Geluidhinder verminderen", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Geurhinder", "ambitie": "Aantal klachten m.b.t. geurhinder niet laten stijgen", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Extra gezonde levensjaren voor alle inwoners (10 extra gezonde levensjaren)", "scales_yes": ["gm", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Welzijn van bewoners voorop stellen binnen de grenzen van het bodem-, water- en ecosysteem", "scales_yes": ["pv"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Terugdringen van gezondheidsachterstanden, verkleinen van de gezondheidskloof", "scales_yes": ["gm", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Versterken van de mentale weerbaarheid en gezondheid", "scales_yes": ["nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Ondersteunen van senioren bij het zo lang mogelijk zelfstandig en gezond functioneren", "scales_yes": ["gm", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Verbeteren van de milieukwaliteit in de stad ", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Gezondheid en levenskwaliteit", "ambitie": "Nieuwe voorzieningen voor kwetsbaren niet realiseren langs drukke wegen (ouderen, kinderen, mensen met een kwetsbare gezondheid)", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Hittestress", "ambitie": "Hittestress in stedelijk gebied voorkomen", "scales_yes": ["pv", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Hittestress", "ambitie": "Bescherming tegen hitte", "scales_yes": ["nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Hittestress", "ambitie": "Realiseren van voldoende schaduwrijke speelplekken", "scales_yes": ["nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Hittestress", "ambitie": "Bescherming tegen UV-straling", "scales_yes": ["nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Hittestress", "ambitie": "Beschermen tegen smog", "scales_yes": ["nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Lichtvervuiling", "ambitie": "Verminderen lichtvervuiling: 50% gezondheidswinst in 2030 ten opzichte van 2016 voor de gezondheidseffecten van lichtvervuiling uit binnenlandse bronnen", "scales_yes": ["nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Leefomgeving die ruimte creeërt voor sociale interactie en ontmoeten", "scales_yes": ["nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Faciliteren van een sterke sociale samenhang", "scales_yes": ["gm", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Inwoners voelen zich prettig en vertrouwd op straat en maken met plezier gebruik van de openbare ruimte", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Versterkte buurtvoorzieningen en ontmoetingsruimten", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Sociale netwerken in de wijk in stand houden en versterken", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Sociale veiligheid en cohesie", "ambitie": "Stimuleren van collectieve initiatieven zoals buurttuinen", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Voorkomen van netto verlies van oppervlakte groen en boomkroonbedekking in de stad", "scales_yes": ["eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Toenemende trend realiseren van groen in de stad (oppervlakte groen en boomkroonbedekking)", "scales_yes": ["eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "3-30-300-regel: vanuit de woning zicht op 3 bomen, 30% boomkroonbedekking in elke buurt, 300 meter tot het dichtstbijzijnde park (en lange routes in het gebied van 3000 meter voor (sportief) bewegen).", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Toegang tot groene koele plek (van minimaal 200m2) in de openbare ruimte binnen maximaal 200 meter afstand gebouw of woning", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Voldoende groen in woonbuurten (minimaal 40% van het oppervlak)", "scales_yes": ["gm", "nl", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Nieuw groen ontwikkelen voor nieuwe woningen (8 m2 groen per nieuwe woning)", "scales_yes": []}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Genoeg en gezond (zwem)water in de stad voor mensen, dieren en planten", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Ruimte bieden voor groen en water in de stad", "scales_yes": ["pv", "eu"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Meer volwassen bomen in de stad, oudere bomen behouden", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Toegankelijkheid van het water vergroten voor suppen, zwemmen en roeien", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Groenblauwe structuur van de bestaande en toekomstige gebouwde omgeving versterken", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Groenbeleving van inwoners, recreanten en toeristen verbeteren", "scales_yes": ["pv"]}, {"thema": "Gezondheid en welzijn", "subthema": "Toegang tot groen en blauw", "ambitie": "Bewoners stimuleren om hun tuin groener te maken", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Trillingen", "ambitie": "Overlast van trillingen beperken", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Gezondheid en welzijn", "subthema": "Voedsel", "ambitie": "regionale productie en distributie van voedsel", "scales_yes": ["gm"]}, {"thema": "Gezondheid en welzijn", "subthema": "Voedsel", "ambitie": "Voedselzekerheid garanderen", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Actieve mobiliteit", "ambitie": "Toepassen van het STOMP-principe (stappen, trappen, OV, Mobiliteitsdiensten, privéauto) geeft prioriteit aan actieve mobiliteit ", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Actieve mobiliteit", "ambitie": "Aantrekkelijke, comfortabele en veilige voetgangers- en (snel)fietsverbindingen", "scales_yes": ["gm", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Actieve mobiliteit", "ambitie": "Meer ruimte bieden aan fietser en voetganger (met aanpassingen in de weginrichting, parkeernormen en slimme technieken)", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Dagelijkse voorzieningen zijn in zowel bestaande als nieuwe wijken voor iedereen op loop- en fietsafstand aanwezig (op 10-15 minuten)", "scales_yes": ["gm", "nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Borgen van goede multimodale bereikbaarheid en naadloze aansluiting", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Modaliteiten vullen elkaar aan (complementair) in de reis- of vervoersketen van A naar B", "scales_yes": ["nl", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Modaliteiten als elkaars alternatief (substituut) met een efficiënte inzet van elk van de modaliteiten ", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Bereikbaarheid van vitale functies borgen", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Bereikbaarheid van voorzieningen in het landelijk gebied waarborgen", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Deur tot deur reis in het stedelijk gebied versterken", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Bereikbaarheid", "ambitie": "Toegankelijke en betaalbare vervoersmogelijkheden en bereikbaarheid voor iedereen ongeacht leeftijd, inkomen of fysieke gesteldheid. ", "scales_yes": ["nl", "gl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Investeren in het elektriciteitsnet voor verduurzaming van transport", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Toename gebruik duurzame brandstoffen", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Versnelde ontwikkeling van duurzame brandstoftechnologieën", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Zero-Emissie zones in de (binnen)stad", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Een toekomstbestendig, toegankelijk, betrouwbaar en dekkend netwerk van laadinfrastructuur", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Een dekkend netwerk van elektrische laadinfrastructuur voor zware voertuigen realiseren", "scales_yes": ["eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Een dekkend netwerk van waterstof stations realiseren voor auto's en zware voertuigen (vanaf 2030)", "scales_yes": ["eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Investeren in laadinfrastructuur voor scheepvaart", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Elektrificatie en duurzame brandstoffen", "ambitie": "Elektrisch rijden wordt de standaard bij nieuwe voertuigen", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Hubs en parkeren", "ambitie": "Verbeteren van hubs om het gebruik van openbaar vervoer, fiets, deelmobiliteit en parkeren op afstand te stimuleren", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Hubs en parkeren", "ambitie": "Knooppunten als efficiënte en effectieve overstap- en overslagpunten", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Hubs en parkeren", "ambitie": "Parkeren clusteren, zoveel mogelijk in gebouwen en op eigen terrein", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Hubs en parkeren", "ambitie": "Zo veel mogelijk dubbelgebruik van parkeerplaatsen en parkeerstroken realiseren (bijvoorbeeld als ruimte voor klimaatadaptatie)", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Hubs en parkeren", "ambitie": "Gebruik van logistieke hubs t.b.v. efficiënte en schone stadslogistiek", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Goederentransport dat nu over de weg gaat vaker over het water (op en duur als volwaardig alternatief)", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Minder overlast van vrachtverkeer", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Efficiënte en schone stadslogistiek", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Verduurzamen van de transportsector", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Meer toegevoegde waarde voor de regio bij goederentransport", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Bundeling van grootschalige logistiek", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Vergroten van capaciteit van transport via het goederenspoor, de binnenvaart en ondergrondse leidingsystemen", "scales_yes": ["pv", "gl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Geïntegreerd systeem voor goederenvervoer", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Logistiek", "ambitie": "Transport van gassen en vloeistoffen zoveel mogelijk via buisleidingen (op en duur als volwaardig alternatief)", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "MaaS en deelmobiliteit", "ambitie": "Realiseren van een uitgebreid netwerk van deelmobiliteit", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "MaaS en deelmobiliteit", "ambitie": "MaaS vergemakkelijkt multimodale duurzame reizen", "scales_yes": ["gm", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "MaaS en deelmobiliteit", "ambitie": "Aanbieden van deeltweewielers en deelauto's", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "MaaS en deelmobiliteit", "ambitie": "Gedragsverandering in mobiliteit inzetten richting duurzamere keuzes", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Smart mobility", "ambitie": "Autoverkeer wordt steeds slimmer en duurzamer", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Smart mobility", "ambitie": "Uitrollen van geautomatiseerde mobiliteit tegen 2030", "scales_yes": ["eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Doorontwikkelen van hoogwaardig openbaar vervoer (HOV)", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Voorkomen van doorgaande verkeersbewegingen door de stad", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "30 km/u als basissnelheid in woonwijken", "scales_yes": ["gm"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "In stand houden en ontwikkelen van goede en betrouwbare infrastructuur (wegen, water, transport, luchtverkeer)", "scales_yes": ["pv", "nl", "gl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Versterken van het openbaar vervoer", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Gebruik van de fiets in mobiliteitsketens van reizigers", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Flexibel vraaggericht vervoer in krimpregio's", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Goed regionale verbindingen", "scales_yes": ["pv"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Internationale treinverbindingen: realiseren van een duurzaam transeuropees transportnetwerk (TEN-T) van hogesnelheidsverbindingen tegen 2030", "scales_yes": ["gm", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Voldoen aan door de EU gestelde infrastructurele vereisten voor militaire mobiliteit (fysieke eisen aan faciliteiten en infrastructuur die betrekking hebben op wegen, spoorwegen, havens, luchthavens en binnenwateren)", "scales_yes": ["nl", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Gebruik maken van de kansen van innovaties om het mobiliteits- en transportnetwerk te versterken", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Het verder verbeteren van de internationale trein als aantrekkelijk alternatief voor de luchtvaart, op de zes prioritaire bestemmingen Brussel, Parijs, Londen, Düsseldorf, Frankfurt en Berlijn", "scales_yes": ["nl"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Korte vluchten waar mogelijk vervangen door treinverbindingen", "scales_yes": ["gm", "eu"]}, {"thema": "Verkeer, Mobiliteit & Logistiek", "subthema": "Verkeer en netwerken", "ambitie": "Autoluwe binnensteden", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "CO2-vastlegging", "ambitie": "CO2 vastleggen in landbouwbodems", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Energie en klimaat", "subthema": "CO2-vastlegging", "ambitie": "Afvalverwerking duurzamer maken via carbon capture storage (CCS) of usage (CCU).", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Tijdig reserveren van benodigde ruimte voor de ontwikkeling van de energiehoofdstructuur", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Realiseren van grootschalige batterijen (vermogen groter dan 100 MW) directe aansluiting op hoogspanningsnet", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Realiseren van een netwerk van grootschalige elektrolysers (met een vermogen groter dan 100 MW, plaatsing bij voorkeur in de omgeving van (elektrische) aanlandlocaties van offshore windenergie en nabij de waterstofbackbone)", "scales_yes": ["nl", "eu", "gl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Ontwikkelen en vergroten capaciteit van ondergrondse opslag en het landelijke transportnetwerk voor waterstof ", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "betrouwbare, betaalbare en veilige energievoorziening, die in 2050 CO2-arm is", "scales_yes": ["pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Waarborgen van de hoofdinfrastructuur voor transport van stoffen via (buis)leidingen", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Oplossen knelpunten op de landelijke hoogspanningsinfrastructuur richting 2030", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Toegang tot betaalbare, betrouwbare duurzame en moderne energie voor iedereen in 2030", "scales_yes": ["gl"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Energie besparen: minder en efficiënter gebruiken", "scales_yes": ["gm", "pv"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Elektriciteitsinfrastructuur: versnelling, ontwikkeling en ruimtelijke inpassing (netten, stations, trafohuisjes,...)", "scales_yes": ["gm", "pv"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Warmteinfrastructuur: versnelling, ontwikkeling en ruimtelijke inpassing (netten, hulwarmtecentrales, warmte-overdrachtsstrations, regelkamers)", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Energiegebruik, transport en besparing", "ambitie": "Huishoudens ondersteunen met laagdrempelige kleine energiebesparende maatregelen", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Productie van groen gas omhoog ", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Grootschalige duurzame opwek van energie ", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Opwek zonne-energie op grote daken", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "In 2030 moet 70% van de elektriciteit uit hernieuwbare bronnen komen", "scales_yes": ["pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Opgewekte energie slim en lokaal gebruiken", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Decentrale opwek van energie stimuleren", "scales_yes": ["gm", "pv"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Hernieuwbare energieproductie op land bevorderen (zon, wind en biomassa)", "scales_yes": ["gm", "pv"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Diversiteit aan energiedragers", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Ruimte bieden aan lokale energieinitiatieven", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Energieopwek", "ambitie": "Innovatie in energieopwek: nieuwe mogelijkheden voor energiegebruik uit wind, zon, biomassa, water en aardwarmte", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatadaptatie", "ambitie": "Klimaatadaptief inrichten van de leefomgeving", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatadaptatie", "ambitie": "Klimaatadaptatie prioriteren in woonwijken", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatadaptatie", "ambitie": "Groene en klimaatadaptieve bedrijventerreinen realiseren", "scales_yes": ["gm"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Klimaatneutraliteit: in 2030 55% minder uitstoot van broeikasgassen dan in 1990, in 2050 volledig klimaatneutraal (netto: resterende uitstoot wordt gecompenseerd)", "scales_yes": ["gm", "pv", "nl", "eu", "gl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Klimaatneutraliteit gebouwde omgeving: in 2050 klimaatneutraal", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Klimaatneutraliteit industrie: in 2030 67% minder uitstoot van broeikasgassen dan in 1990, in 2050 netto klimaatneutraal", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Klimaatneutrale landbouw en landgebruik: 46% minder uitstoot van broeikasgassen dan in 1990, in 2050 volledig klimaatneutraal", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Een klimaatbestendige leefomgeving", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Fossiele energiebronnen uitfaseren en vervangen door hernieuwbare bronnen", "scales_yes": ["gm", "pv", "nl", "eu"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Mobiliteitssector schoner en duurzamer maken", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "In 2030 20% minder energieverbruik in de gebouwde omgeving dan in 1990", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Volledig klimaatneutrale mobiliteit in 2050 (geen broeikasgassen meer uitstoten)", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Alle vervoersmiddelen schoon in 2050", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Glas- en tuinbouw in 2040 klimaatneutraal", "scales_yes": ["pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Koolstofverwijdering zorgt voor minder CO2 in de atmosfeer: 20 tot 25 megaton minder CO2 per jaar tussen 2040 en 2050", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "100% Energieneutrale woon- en werkomgeving in 2050", "scales_yes": ["pv"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Emissiereductie ammoniak,CO2 en methaan", "scales_yes": ["pv", "nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Bestaande gebouwen voorzien van hybride warmtepompen", "scales_yes": ["nl"]}, {"thema": "Energie en klimaat", "subthema": "Klimaatneutaal en -bestendig", "ambitie": "Gebouwen aardgasvrij maken", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Wonen", "subthema": "Flexibiliteit/adaptiviteit", "ambitie": "Realiseren van tijdelijke en verplaatsbare woningen ", "scales_yes": ["gm", "nl"]}, {"thema": "Wonen", "subthema": "Flexibiliteit/adaptiviteit", "ambitie": "Realiseren van kwalitatieve huisvesting voor arbeidsmigranten in de gemeente waar zij werken", "scales_yes": ["pv"]}, {"thema": "Wonen", "subthema": "Flexibiliteit/adaptiviteit", "ambitie": "Realiseren van slaapplekken in logiesgebouwen voor huisvesting van arbeidsmigranten", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Verduurzaming woningen", "ambitie": "Woningvoorraad verduurzamen (isoleren, aansluiten op warmtenetten, plaatsen hybride warmtepompen)", "scales_yes": ["pv", "nl", "gl"]}, {"thema": "Wonen", "subthema": "Verduurzaming woningen", "ambitie": "Woningen aansluiten op warmtenetten", "scales_yes": ["gm", "pv"]}, {"thema": "Wonen", "subthema": "Verduurzaming woningen", "ambitie": "Verduurzaming van bestaande woningen en wijken", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Wonen", "subthema": "Verduurzaming woningen", "ambitie": "Woningen en gebouwen van het aardgas af (met passend alternatief)", "scales_yes": ["gm", "nl"]}, {"thema": "Wonen", "subthema": "Verduurzaming woningen", "ambitie": "Aanpakken voor inwoners die een slecht geïsoleerde woning en een lage WOZ-waarde hebben", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Ruimte voor innovatieve woonmilieus (als wonen op water; vragers-dragers-concepten; wooncorporaties, CPO)", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Realiseren van nieuwe woningen in verhoogd tempo", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Realiseren van een evenwichtig en gevarieerd woningaanbod voor verschillende doelgroepen (icl. kwetsbare groepen)", "scales_yes": ["gm", "pv"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Woningen ontwikkelen die passen bij woningzoekenden, nu en op basis van demografische ontwikkelingen", "scales_yes": ["pv"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Realiseren van nieuwe woningen volgens verdeelsleutel 1/3e sociale huur, 1/3e betaalbare huur en 1/3e vrije sector koop of huur", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Wonen", "subthema": "Woningbouw", "ambitie": "Groei van het aantal inwoners faciliteren", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Geschikte, veilige en betaalbare huisvesting voor iedereen", "scales_yes": ["gm", "pv", "nl", "gl"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Beter benutten van bestaande gebouwen en woningvoorraad", "scales_yes": ["pv", "nl"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Realiseren van 30-35% sociale huur op de totale woningvoorraad", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Gemengde buurten qua doelgroepen (kwetsbaarheid)", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Stimuleren van collectieve woonvormen", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Grotere huishoudens voorrang geven op grotere woningen met meer kamers en vice versa voor kleine huishoudens", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Expats en internationale studenten onderbrengen in tijdelijke verblijfsvormen ", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Verminderen van het aantal daklozen (naar geen daklozen meer in 2030)", "scales_yes": ["gm", "nl"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Huidige inwoners een beter perspectief op een wooncarrière (zowel starten als doorstromen) bieden", "scales_yes": ["gm"]}, {"thema": "Wonen", "subthema": "Woningvoorraad en -tekort", "ambitie": "Een aantrekkelijke stad zijn voor jongeren en jonge gezinnen", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Mengen van bedrijven met een lage milieucategorie met woningbouw en waar mogelijk natuur en recreatie", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Meervoudig ruimtegebruik en functiemenging toepassen (zowel op locaties die dominant wonen als werken zijn)", "scales_yes": ["gm", "pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Een passend voorzieningenaanbod in woonwijken aanbieden", "scales_yes": ["gm", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Kantoren met kwaliteit toevoegen rondom stations", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Streven naar multifunctionele accommodaties (dubbelgebruik van ruimte)", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Meervoudig gebruik van daken stimuleren (en regelgeving daarop afstemmen)", "scales_yes": ["gm", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Functiemix", "ambitie": "Multifunctioneel gebruik van parkeervoorzieningen", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Gebruikswaarde", "ambitie": "Overlast bezorgeconomie in de openbare ruimte minimaliseren (uitstraling, verkeersveiligheid, overaanbod)", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke inpassing", "ambitie": "Ruimtelijke inpassing transitie naar duurzame energie en circulaire economie", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke inpassing", "ambitie": "Locaties van (groot)winkelbedrijven, kantoren en bedrijventerreinen zoveel mogelijk afstemmen op het verkeers- en vervoersnetwerk", "scales_yes": ["nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke inpassing", "ambitie": "Schaarse ruimte en infrastructuur effectiever en efficiënter gebruiken", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke inpassing", "ambitie": "Geen ruimte geven aan datacenters groter dan 3 hectare", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Versterken van de kwaliteit van de fysieke leefomgeving en vitaliteit in naoorlogse wijken en kleine kernen", "scales_yes": ["gm", "pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Compact, samenhangend en kwalitatief hoogwaardig bebouwd gebied", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Kwalitatief hoogwaardige verbindingen tussen stad en land", "scales_yes": ["gm", "pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Versterken van het samenhangende stedelijke netwerk", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Bestaande wijkwinkelcentra behouden en versterken", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Zachte overgang van het stedelijk- naar het landelijk gebied", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Water en bodem sturend maken in ruimtelijke ordening", "scales_yes": ["pv", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Ruimtelijke kwaliteit", "ambitie": "Een sterk land zonder grote verschillen in ruimtelijke kwaliteit ", "scales_yes": ["nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Toekomstwaarde", "ambitie": "Nieuwe invulling geven aan kerkgebouwen die niet meer in eredienst zijn", "scales_yes": ["gm"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Verdichten van bestaande wijken", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Inbreiding boven uitbreiding", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Woningbouw zoveel mogelijk binnen bestaand stads- en dorpsgebied", "scales_yes": ["gm", "pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Verdichten rondom trein- en busstations", "scales_yes": ["gm", "nl"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Geen nieuwe uitleg voor werklocaties (beperken tot vastgestelde locaties)", "scales_yes": ["pv"]}, {"thema": "Ruimtelijke Ordening & Inrichting", "subthema": "Verdichting en verstedelijking", "ambitie": "Compact clusteren van publiekstrekkende functies/voorzieningen in de binnenstad", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Verkeersveiligheid", "ambitie": "50% minder verkeersslachtoffers in 2030 (tussendoel)", "scales_yes": ["nl"]}, {"thema": "Veiligheid", "subthema": "Verkeersveiligheid", "ambitie": "Geen verkeersslachtoffers meerin 2050", "scales_yes": ["gm", "nl", "eu"]}, {"thema": "Veiligheid", "subthema": "Algemene veiligheid", "ambitie": "De nood- en hulpdiensten tijdig aanwezig (tijdsnormen: politie in 90% van de gevallen binnen 15 minuten ter plaatse, ambulance in 95% binnen 15 minuten ter plaatse, brandweer opkomsttijd 6-8 minuten)", "scales_yes": ["nl"]}, {"thema": "Veiligheid", "subthema": "Algemene veiligheid", "ambitie": "Vergroten van de weerbaarheid en continuïteit van de vitale infrastructuur, cruciale processen en diensten en kritieke entiteiten tegen diverse dreigingen, zowel fysiek, digitaal als economisch (water, energie, communicatie, vervoer - hybride aanvallen, natuurrampen, terroristische dreigingen, gezondheidscrises)", "scales_yes": ["nl", "eu"]}, {"thema": "Veiligheid", "subthema": "Algemene veiligheid", "ambitie": "Beschermen van het mobiliteitssysteem tegen de veranderende gesteldheid van water en bodem door klimaatverandering", "scales_yes": ["nl"]}, {"thema": "Veiligheid", "subthema": "Defensie", "ambitie": "Extra oefenruimte voor defensie realiseren", "scales_yes": ["nl"]}, {"thema": "Veiligheid", "subthema": "Algemene veiligheid", "ambitie": "Bevorder vreedzame en inclusieve samenlevingen met het oog op duurzame ontwikkeling, verzeker toegang tot justitie voor iedereen en creëer op alle niveaus doeltreffende, verantwoordelijke en open instellingen", "scales_yes": ["gl"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Wateroverlast door neerslag: Buien tot 80 mm per uur brengen geen schade aan in panden en zorgen niet voor onbegaanbare wegen", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Het water- en rioleringssysteem werkt zoals bedoeld en is niet kwetsbaar", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Risico door menselijke activiteiten", "ambitie": "Beschermen van inwoners, bezoekers en werknemers tegen ongewoon voorval met productie, opslag en transport van gevaarlijke stoffen", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Sociale veiligheid", "ambitie": "Meer cameratoezicht op straat", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Sociale veiligheid", "ambitie": "Meer ogen op straat", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Sociale veiligheid", "ambitie": "Verbeteren sociale leefbaarheid en veiligheid in wijken", "scales_yes": ["pv"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Handhaven en versterken van de primaire keringen, waar mogelijk met innovatieve maatregelen", "scales_yes": ["gm", "pv"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Beschermen tegen en verminderen van overstromingen", "scales_yes": ["pv", "gl"]}, {"thema": "Veiligheid", "subthema": "Algemene veiligheid", "ambitie": "Onnodige schade door extreme weersomstandigheden voorkomen", "scales_yes": ["pv"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Cruciale functies (zoals ziekenhuizen) niet in laaggelegen gebieden realiseren", "scales_yes": ["gm"]}, {"thema": "Veiligheid", "subthema": "Wateroverlast", "ambitie": "Dijken aanpassen zodat de kans op overlijden van een individu ten gevolge van overstroming 1:100.000 wordt", "scales_yes": ["gm", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Minder verspillen in de voedselketen: halvering voedselverliezen en -verspilling 2030", "scales_yes": ["gm", "pv", "nl", "eu", "gl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Industrie circulair in 2050", "scales_yes": ["nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "In 2050 volledig circulair: verschuiving van een lineair en fossiel \"gebruik-en-wegwerp\"-systeem naar een systeem waarin afval en vervuiling worden geminimaliseerd en waardevolle materialen in de economie blijven circuleren", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Tegen 2030 de afvalproductie aanzienlijk beperken via preventie, vermindering, recycling en hergebruik", "scales_yes": ["eu", "gl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Circulaire bedrijvigheid en ondernemerschap stimuleren", "scales_yes": ["gm"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Stimuleren van innovaties en het toepassen van duurzame technologieën binnen diverse sectoren", "scales_yes": ["nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Producten en materialen worden zo lang mogelijk hergebruikt of hoogwaardig gerecycled", "scales_yes": ["gm", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Sterk verminderen van gebruik van primaire grondstoffen, focus op hernieuwbare, duurzame materialen", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Hoogwaardige afvalscheiding", "scales_yes": ["gm"]}, {"thema": "Duurzaam bouwen", "subthema": "Circulariteit", "ambitie": "Deeleconomie: stimuleren van delen van producten zoals auto's", "scales_yes": ["nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Alle nieuwe ontwerpen voor gebiedsontwikkelingen (inclusief transformatie) en openbare ruimte baseren op circulaire criteria", "scales_yes": ["gm", "eu"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Zero-emissie gebouwen: alle nieuwe gebouwen zijn zero emissie vanaf 2030 en alle bestaande gebouwen zijn getransformeerd tot zero emissie vanaf 2050", "scales_yes": ["eu"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Natuurinclusief en volgens ecologische principes ontwerpen en ontwikkelen van gebouwen en buitenruimte (groen en blauw)", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Alle nieuwe huur- en koopwoningen circulair, biobased, nul op de meter", "scales_yes": ["gm"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Meer biobased bouwen (in 2030 30% van de nieuwbouwwoningen realiseren met minstens 30% meer biobased materialen)", "scales_yes": ["nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Duurzaam bouwen volgens BENG en MPG", "scales_yes": ["gm", "pv", "nl"]}, {"thema": "Duurzaam bouwen", "subthema": "Toekomstbestendig ontwikkelen", "ambitie": "Gebruik en hergebruik van duurzame materialen in de bouw", "scales_yes": ["eu"]}, {"thema": "Duurzaam bouwen", "subthema": "Transformatie", "ambitie": "Duurzaam renoveren van bestaande gebouwen op basis van circulaire oplossingen", "scales_yes": ["eu"]}, {"thema": "Duurzaam bouwen", "subthema": "Transformatie", "ambitie": "Renoveren van gebouwen in bezit van de overheid (minstens 3% per jaar)", "scales_yes": ["eu"]}, {"thema": "Duurzaam bouwen", "subthema": "Transformatie", "ambitie": "Transformatie van ruimten boven winkelpanden naar wonen", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Bedrijvigheid", "ambitie": "Beschikbaar maken dan wel houden van (milieu)ruimte voor grootschalige bedrijfsvestigingen en industrie", "scales_yes": ["pv", "nl"]}, {"thema": "Economische vitaliteit", "subthema": "Bedrijvigheid", "ambitie": "Toeristisch-recreatief ondernemerschap stimuleren", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Bedrijvigheid", "ambitie": "Inrichten van (tijdelijke) creatieve broedplaatsen", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Bedrijvigheid", "ambitie": "De glas- en tuinbouw behouden de (inter)nationale koploperspositie en zijn economisch rendabel", "scales_yes": ["pv", "nl"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Een toekomstbestendige economie die innovatief, duurzaam en circulair is", "scales_yes": ["gm", "pv", "nl", "eu", "gl"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Groei van werkgelegenheid in stad en regio stimuleren", "scales_yes": ["gm", "pv"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Banen met kwaliteit", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Duurzame groei van toerisme", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Lokalere verwerking, afzet en consumptie van producten realiseren (korte ketens)", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Slimme, schone en inclusieve economie", "scales_yes": ["pv"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Ontwikkelen van een biobased economie", "scales_yes": ["pv", "nl", "eu"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Hergebruiken van grondstoffen als nieuw verdienmodel", "scales_yes": ["pv"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Verspreiden van het toerisme over stad en regio, minde concentratie in het centrum", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Circulaire en duurzame economie", "ambitie": "Verantwoorde consumptie en productie", "scales_yes": ["nl", "eu", "gl"]}, {"thema": "Economische vitaliteit", "subthema": "Vestigingsklimaat", "ambitie": "Een aantrekkelijke stad om te werken: passende en aantrekkelijke werkgebieden", "scales_yes": ["gm", "pv"]}, {"thema": "Economische vitaliteit", "subthema": "Vestigingsklimaat", "ambitie": "MKB-vriendelijk vestigingsklimaat innovatie stimuleren", "scales_yes": ["gm", "pv"]}, {"thema": "Economische vitaliteit", "subthema": "Vestigingsklimaat", "ambitie": "Nieuwe bedrijven dragen bij aan de huidige en toekomstige behoeften van de stad", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Werklocaties en bedrijventerreinen", "ambitie": "Geen nieuwe kantoren realiseren maar bestaande vernieuwen", "scales_yes": ["gm"]}, {"thema": "Economische vitaliteit", "subthema": "Werklocaties en bedrijventerreinen", "ambitie": "Ruimte voor werklocaties beter benutten", "scales_yes": ["pv"]}], "themes": ["Duurzaam bouwen", "Economische vitaliteit", "Energie en klimaat", "Gezondheid en welzijn", "Milieu, natuur en ecologie", "Ruimtelijke Ordening & Inrichting", "Veiligheid", "Verkeer, Mobiliteit & Logistiek", "Wonen"], "scale_order": ["gm", "pv", "nl", "eu", "gl"], "scale_labels": {"gm": "Gemeente", "pv": "Provincie", "nl": "Nationaal", "eu": "EU", "gl": "Globaal"}, "scale_colors": {"gm": "#4e79a7", "pv": "#f28e2b", "nl": "#e15759", "eu": "#76b7b2", "gl": "#59a14f"}};   // injected by Python
+const RECORDS = DATA.records;
+const THEMES  = DATA.themes;
+const SCALES  = DATA.scale_order; // ["gm","pv","nl","eu","gl"]
+const SCALE_LABELS = DATA.scale_labels;
+const SCALE_COLORS = DATA.scale_colors; // kept for fallback
+
+const themaSel = document.getElementById('thema');
+const subSel   = document.getElementById('sub');
+const qInput   = document.getElementById('q');
+const listDiv  = document.getElementById('list');
+const countDiv = document.getElementById('count');
+const resetBtn = document.getElementById('reset');
+const exportBtn= document.getElementById('export');
+const legendDiv= document.getElementById('legend');
+
+
+// Base color per theme (adjust to your exact theme keys)
+const THEME_BASE = {
+  "Wonen":        "#488db8",
+  "Gezondheid en welzijn":   "#e65a91",
+  "Verkeer, Mobiliteit & Logistiek":   "#DB4B2E",
+  "Energie en klimaat":      "#F6C667",
+  "Milieu, natuur en ecologie":       "#accc5f",
+  "Veiligheid":   "#A27ECC",
+  "Ruimtelijke Ordening & Inrichting": "#f69c94",
+  "Natuur & Ecologie": "#22c55e",
+  "Duurzaam bouwen": "#64CD6A",
+  "Economische vitaliteit": "#67A0F5"
+};
+
+function uniq(a){ return Array.from(new Set(a)); }
+function fillThema(){
+  themaSel.innerHTML = '<option value="">All themes</option>' +
+    THEMES.map(t=>`<option value="${t}">${t}</option>`).join('');
+}
+function fillSub(){
+  const t = themaSel.value;
+  const subs = t
+    ? uniq(RECORDS.filter(r=>r.thema===t).map(r=>r.subthema))
+    : uniq(RECORDS.map(r=>r.subthema));
+  subSel.innerHTML = '<option value="">All sub-themes</option>' +
+    subs.sort().map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+function fillScales(){
+  document.getElementById('scales').innerHTML =
+    SCALES.map(k=>`<label><input type="checkbox" value="${k}"/> ${SCALE_LABELS[k]}</label>`).join('');
+}
+function activeScales(){
+  return Array.from(document.querySelectorAll('#scales input[type=checkbox]:checked')).map(c=>c.value);
+}
+
+function filterData(){
+  const t = themaSel.value, s = subSel.value, q = qInput.value.toLowerCase().trim();
+  const picked = activeScales();   // ← no mode anymore
+  return RECORDS.filter(r=>{
+    if (t && r.thema!==t) return false;
+    if (s && r.subthema!==s) return false;
+    if (q && !(r.ambitie.toLowerCase().includes(q) || r.subthema.toLowerCase().includes(q) || r.thema.toLowerCase().includes(q))) return false;
+
+    if (picked.length){
+      const set = new Set(r.scales_yes);
+      const all = picked.every(x => set.has(x)); // always require all selected scales
+      if (!all) return false;
+    }
+    return true;
+  });
+}
+
+function renderList(){
+  const rows = filterData();
+  countDiv.textContent = `Showing ${rows.length} ambitions`;
+  listDiv.innerHTML = rows.map(d=>`
+    <div class="card">
+      <div class="row"><div><strong>${d.ambitie}</strong></div><div class="muted">${d.thema} • ${d.subthema}</div></div>
+      <div style="margin-top:6px;">${SCALES.map(s=>`<span class="badge" style="background:${d.scales_yes.includes(s)?'#eef7ff':''}">${SCALE_LABELS[s]}${d.scales_yes.includes(s)?' ✓':''}</span>`).join(' ')}</div>
+    </div>`).join('');
+}
+
+// --- geometry helpers ---
+function polarToCartesian(cx,cy,r,a){ const rad=(a-90)*Math.PI/180; return [cx+r*Math.cos(rad), cy+r*Math.sin(rad)]; }
+function arcPath(cx,cy,r1,r2,a0,a1){
+  const p0=polarToCartesian(cx,cy,r2,a0), p1=polarToCartesian(cx,cy,r2,a1);
+  const p2=polarToCartesian(cx,cy,r1,a1), p3=polarToCartesian(cx,cy,r1,a0);
+  const large=(a1-a0)>180?1:0;
+  return `M ${p0[0]} ${p0[1]} A ${r2} ${r2} 0 ${large} 1 ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} A ${r1} ${r1} 0 ${large} 0 ${p3[0]} ${p3[1]} Z`;
+}
+// Arc for theme labels, handles sweep direction
+function arcLinePath(cx, cy, r, a0, a1, sweep = 1) {
+  const p0 = polarToCartesian(cx, cy, r, a0);
+  const p1 = polarToCartesian(cx, cy, r, a1);
+  const large = (Math.abs(a1 - a0)) > 180 ? 1 : 0;
+  return `M ${p0[0]} ${p0[1]} A ${r} ${r} 0 ${large} ${sweep} ${p1[0]} ${p1[1]}`;
+}
+
+// --- color helpers for theme gradients ---
+function hexToRgb(hex){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : {r: 120,g:120,b:120};
+}
+function rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){ h=s=0; } else {
+    const d=max-min;
+    s=l>0.5? d/(2-max-min): d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      case b: h=(r-g)/d+4; break;
+    }
+    h/=6;
+  }
+  return {h: h*360, s: s*100, l: l*100};
+}
+function hslCss(h,s,l){ return `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`; }
+function themedScaleColor(baseHex, idx, total=5){
+  const {r,g,b} = hexToRgb(baseHex);
+  const hsl = rgbToHsl(r,g,b);
+  const lMax = Math.min(75, hsl.l + 10);
+  const lMin = Math.max(35, hsl.l - 15);
+  const l = lMax - (idx * (lMax - lMin) / Math.max(1, total-1));
+  const s = Math.min(85, hsl.s + 10);
+  return hslCss(hsl.h, s, l);
+}
+
+// --- helper to wrap text into tspans ---
+function wrapSvgText(tEl, textStr, maxCharsPerLine=20) {
+  const words = textStr.split(/\s+/);
+  let line = [];
+  let lineCount = 0;
+
+  words.forEach((word) => {
+    const testLine = [...line, word].join(" ");
+    if (testLine.length > maxCharsPerLine && line.length > 0) {
+      // commit current line
+      const tsp = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tsp.setAttribute("x", tEl.getAttribute("x"));
+      tsp.setAttribute("dy", lineCount === 0 ? "0" : "1.2em");
+      tsp.textContent = line.join(" ");
+      tEl.appendChild(tsp);
+
+      line = [word];
+      lineCount++;
+    } else {
+      line = testLine.split(" ");
+    }
+  });
+
+  // commit last line
+  if (line.length > 0) {
+    const tsp = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    tsp.setAttribute("x", tEl.getAttribute("x"));
+    tsp.setAttribute("dy", lineCount === 0 ? "0" : "1.2em");
+    tsp.textContent = line.join(" ");
+    tEl.appendChild(tsp);
+  }
+}
+// Curved label along an arc (used for the selected sub-theme around ambitions)
+function addCurvedRingLabel(svg, text, color, cx, cy, radius, a0, a1) {
+  const aMid = a0 + (a1 - a0) / 2;
+  // keep bottom text upright by reversing sweep on the lower half
+  const isBottom = (aMid > 90 && aMid < 270);
+  const sweep = isBottom ? 0 : 1;
+
+  // trim a tiny bit to avoid clipping the ends
+  const start = a0 + 2, end = a1 - 2;
+
+  // path for text to follow
+  const id = `sub-ring-${Math.random().toString(36).slice(2)}`;
+  const p = document.createElementNS(svg.namespaceURI, 'path');
+  p.setAttribute('id', id);
+  p.setAttribute('d', arcLinePath(cx, cy, radius, start, end, sweep));
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', 'none');
+  svg.appendChild(p);
+
+  const tEl = document.createElementNS(svg.namespaceURI, 'text');
+  tEl.setAttribute('fill', color);
+  tEl.setAttribute('font-weight', '700');
+  tEl.setAttribute('font-size', '12');
+  tEl.style.pointerEvents = 'none';
+
+  const tp = document.createElementNS(svg.namespaceURI, 'textPath');
+  tp.setAttribute('href', `#${id}`);
+  tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${id}`);
+  tp.setAttribute('startOffset', '50%');
+  tp.setAttribute('text-anchor', 'middle');
+  tp.textContent = text;
+
+  // auto-shrink to fit the arc
+  // (rough heuristic: 11–15px depending on arc length vs characters)
+  // You can tweak if you prefer a fixed size.
+  requestAnimationFrame(() => {
+    const L = p.getTotalLength();
+    const target = Math.max(11, Math.min(15, Math.floor((L * 0.14) / Math.max(1, text.length))));
+    tEl.setAttribute('font-size', String(target));
+  });
+
+  tEl.appendChild(tp);
+  svg.appendChild(tEl);
+}
+
+
+function placeAmbitionLabelLeader(svg, textStr, baseColor, cx, cy, rAnchor, rOuter, a0, a1) {
+  const aMid = a0 + (a1 - a0) / 2;
+
+  // --- leader geometry (radial logic like subthema leaders) ---
+  const marginOutside = 8;
+  const elbowRadius   = rOuter + marginOutside;
+  const [ax, ay] = polarToCartesian(cx, cy, rAnchor + 1, aMid);
+  const [ex, ey] = polarToCartesian(cx, cy, elbowRadius, aMid);
+
+  const rightSide = !(aMid > 180 && aMid < 360);
+  const labelGap  = 8;
+  const tx = ex + (rightSide ? labelGap : -labelGap);
+  const ty = ey;
+
+  // --- leader line ---
+  const leader = document.createElementNS(svg.namespaceURI, 'path');
+  leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${tx} ${ty}`);
+  leader.setAttribute('fill', 'none');
+  leader.setAttribute('stroke', baseColor);
+  leader.setAttribute('stroke-width', '1.2');
+  leader.setAttribute('opacity', '0.9');
+  leader.style.pointerEvents = 'none';
+  svg.appendChild(leader);
+
+  // --- text setup ---
+  const t = document.createElementNS(svg.namespaceURI, 'text');
+  t.setAttribute('x', tx + (rightSide ? 2 : -2));
+  t.setAttribute('y', ty);
+  t.setAttribute('text-anchor', rightSide ? 'start' : 'end');
+  t.setAttribute('dominant-baseline', 'middle');
+  t.setAttribute('font-size', '11');
+  t.setAttribute('font-weight', '600');
+  t.setAttribute('fill', baseColor);
+  t.style.pointerEvents = 'none';
+  svg.appendChild(t);
+
+  // ---- wrap text neatly: up to 4 full lines, 22 chars each ----
+  const maxCharsPerLine = 22;
+  const maxLines = 4;
+  const words = textStr.split(/\s+/);
+  let line = [];
+  let lines = [];
+
+  words.forEach(word => {
+    const testLine = [...line, word].join(" ");
+    if (testLine.length > maxCharsPerLine && line.length > 0) {
+      lines.push(line.join(" "));
+      line = [word];
+    } else {
+      line = testLine.split(" ");
+    }
+  });
+  if (line.length > 0) lines.push(line.join(" "));
+
+  // Truncate to at most 4 lines
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    // If text was longer, add ellipsis to last line
+    const last = lines[maxLines - 1];
+    if (!last.endsWith("…")) lines[maxLines - 1] = last.replace(/\s*$/, "") + "…";
+  }
+
+  // Render each line as tspan
+  lines.forEach((lineText, idx) => {
+    const tsp = document.createElementNS(svg.namespaceURI, 'tspan');
+    tsp.setAttribute('x', t.getAttribute('x'));
+    tsp.setAttribute('dy', idx === 0 ? '0' : '1.2em');
+    tsp.textContent = lineText;
+    t.appendChild(tsp);
+  });
+
+  // --- edge protection ---
+  const bbox = t.getBBox();
+  const padding = 6;
+  const svgW = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal.width : svg.getAttribute('width');
+  if (svgW) {
+    const w = +svgW;
+    if (bbox.x + bbox.width > w - padding) {
+      const dx = (w - padding) - (bbox.x + bbox.width);
+      t.setAttribute('x', (+t.getAttribute('x') + dx).toString());
+      leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${+t.getAttribute('x') + (rightSide ? -2 : 2)} ${ty}`);
+    } else if (bbox.x < padding) {
+      const dx = padding - bbox.x;
+      t.setAttribute('x', (+t.getAttribute('x') + dx).toString());
+      leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${+t.getAttribute('x') + (rightSide ? -2 : 2)} ${ty}`);
+    }
+  }
+
+  return { leader, t };
+}
+
+
+
+
+
+
+// --- sub-theme label with radial leader that exits the chart ---
+function placeSubLabelLeader(svg, textStr, baseColor, cx, cy, R_subOut, R_outer, themeBand, a0, a1) {
+  const aMid = a0 + (a1 - a0) / 2;
+
+  // Always run the leader radially beyond the OUTER theme ring.
+  // Go past R_outer by a small margin so the label never sits inside.
+  const marginOutside = 8;                        // extra outside the outer ring
+  const elbowRadius   = R_outer + marginOutside;  // radial elbow point beyond the chart
+
+  // Points: anchor at sub ring edge -> elbow (radial) -> short tangent to text
+  const [ax, ay] = polarToCartesian(cx, cy, R_subOut + 1, aMid);     // anchor on sub ring
+  const [ex, ey] = polarToCartesian(cx, cy, elbowRadius, aMid);      // elbow beyond outer ring
+
+  // Decide which side we’re on for text alignment
+  const rightSide = !(aMid > 180 && aMid < 360);
+  const labelGap  = 8;   // small tangent offset out from the elbow
+  const tx = ex + (rightSide ? labelGap : -labelGap);
+  const ty = ey;
+
+  // leader path: strictly radial out, then a tiny tangent tick to the label
+  const leader = document.createElementNS(svg.namespaceURI, 'path');
+  leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${tx} ${ty}`);
+  leader.setAttribute('fill','none');
+  leader.setAttribute('stroke', baseColor);
+  leader.setAttribute('stroke-width','1.2');
+  leader.setAttribute('opacity','0.9');
+  leader.style.pointerEvents = 'none';
+  svg.appendChild(leader);
+
+  // text (horizontal)
+  const t = document.createElementNS(svg.namespaceURI, 'text');
+  t.textContent = textStr;
+  t.setAttribute('x', tx + (rightSide ? 2 : -2));
+  t.setAttribute('y', ty);
+  t.setAttribute('dominant-baseline','middle');
+  t.setAttribute('text-anchor', rightSide ? 'start' : 'end');
+  t.setAttribute('font-size','12');
+  t.setAttribute('font-weight','600');
+  t.setAttribute('fill', baseColor);
+  t.style.pointerEvents = 'none';
+  svg.appendChild(t);
+
+  // Optional: if the label still clips the SVG edge, nudge it inward
+  // (simple guard—feel free to skip)
+  const bbox = t.getBBox();
+  const padding = 6;
+  const svgW = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal.width : svg.getAttribute('width');
+  if (svgW) {
+    const w = +svgW;
+    if (bbox.x + bbox.width > w - padding) {
+      const dx = (w - padding) - (bbox.x + bbox.width);
+      t.setAttribute('x', (+t.getAttribute('x') + dx).toString());
+      leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${+t.getAttribute('x') + (rightSide ? -2 : 2)} ${ty}`);
+    } else if (bbox.x < padding) {
+      const dx = padding - bbox.x;
+      t.setAttribute('x', (+t.getAttribute('x') + dx).toString());
+      leader.setAttribute('d', `M ${ax} ${ay} L ${ex} ${ey} L ${+t.getAttribute('x') + (rightSide ? -2 : 2)} ${ty}`);
+    }
+  }
+
+  return {leader, t};
+}
+
+function drawSubthemeRing(svg, name, color, cx, cy, rInner, rOuter, a0, a1) {
+  // --- White subthema ring ---
+  const ring = document.createElementNS(svg.namespaceURI, 'path');
+  ring.setAttribute('d', arcPath(cx, cy, rInner, rOuter, a0, a1));
+  ring.setAttribute('fill', '#fff');         // solid white fill
+  ring.setAttribute('stroke', '#fff');       // white outline
+  ring.setAttribute('stroke-width', '2');
+  ring.setAttribute('pointer-events', 'none'); // don't block mouse interactions
+  svg.appendChild(ring);
+
+  // --- readable curved text ---
+  const midAngle = a0 + (a1 - a0) / 2;
+  const isBottom = midAngle > 90 && midAngle < 270;
+  const sweep = isBottom ? 0 : 1;
+  const textPathId = `subtheme-text-${Math.random().toString(36).slice(2)}`;
+  const radius = (rInner + rOuter) / 2;
+  const trim = 3;
+  const start = isBottom ? a1 - trim : a0 + trim;
+  const end   = isBottom ? a0 + trim : a1 - trim;
+
+  const textArc = document.createElementNS(svg.namespaceURI, 'path');
+  textArc.setAttribute('id', textPathId);
+  textArc.setAttribute('d', arcLinePath(cx, cy, radius, start, end, sweep));
+  textArc.setAttribute('fill', 'none');
+  textArc.setAttribute('stroke', 'none');
+  svg.appendChild(textArc);
+
+  const label = document.createElementNS(svg.namespaceURI, 'text');
+  label.setAttribute('fill', color);  // theme color for contrast
+  label.setAttribute('font-weight', '700');
+  label.setAttribute('font-size', '13');
+  label.style.pointerEvents = 'none';
+
+  const tp = document.createElementNS(svg.namespaceURI, 'textPath');
+  tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${textPathId}`);
+  tp.setAttribute('startOffset', '50%');
+  tp.setAttribute('text-anchor', 'middle');
+  tp.textContent = name;
+
+  label.appendChild(tp);
+  svg.appendChild(label);
+}
+
+
+
+
+
+
+function blendHexColors(hex1, hex2, ratio=0.5){
+  const c1 = hexToRgb(hex1), c2 = hexToRgb(hex2);
+  const r = Math.round(c1.r + (c2.r - c1.r) * ratio);
+  const g = Math.round(c1.g + (c2.g - c1.g) * ratio);
+  const b = Math.round(c1.b + (c2.b - c1.b) * ratio);
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawHighlightRing(svg, cx, cy, rInner, rOuter, a0, a1, color = '#540932') {
+  const path = document.createElementNS(svg.namespaceURI, 'path');
+  path.setAttribute('d', arcPath(cx, cy, rInner, rOuter, a0, a1));
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', '3');
+  path.setAttribute('pointer-events', 'none');
+  return path;
+}
+
+function drawChart(){
+  const chartDiv=document.getElementById('chart'); 
+  chartDiv.innerHTML='';
+  const width=chartDiv.clientWidth, height=820, cx=width/2, cy=height*0.45;
+
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width',width); 
+  svg.setAttribute('height',height);
+  chartDiv.appendChild(svg);
+
+  // create layered groups
+  const gThemes   = document.createElementNS(svg.namespaceURI, 'g'); // theme wedges + labels
+  const gSub      = document.createElementNS(svg.namespaceURI, 'g'); // sub-theme wedges + labels
+  const gAmb      = document.createElementNS(svg.namespaceURI, 'g'); // ambitions + leaders
+  const gOverlay  = document.createElementNS(svg.namespaceURI, 'g'); // highlight + theme text
+  const gHighlight = document.createElementNS(svg.namespaceURI, 'g');
+  
+
+
+  svg.appendChild(gThemes);
+  svg.appendChild(gSub);
+  svg.appendChild(gAmb);
+  svg.appendChild(gOverlay);
+  svg.appendChild(gHighlight);
+
+  // allow reset by clicking background
+  svg.addEventListener('click', e => {
+    if (e.target === svg) {
+      themaSel.value = '';
+      fillSub();
+      subSel.value = '';
+      qInput.value = '';
+      renderList();
+      drawChart();
+    }
+  });
+
+  // BACK button (appears only when history exists)
+if (viewHistory.length) {
+  const backGroup = document.createElementNS(svg.namespaceURI, 'g');
+  backGroup.setAttribute('cursor', 'pointer');
+
+  // solid rectangle, corporate purple, no rounded corners
+  const rect = document.createElementNS(svg.namespaceURI, 'rect');
+  rect.setAttribute('x', 10);
+  rect.setAttribute('y', 10);
+  rect.setAttribute('width', 30);
+  rect.setAttribute('height', 30);
+  rect.setAttribute('fill', '#540932');   // same as text colour
+  rect.setAttribute('stroke', '#540932'); // consistent edge
+  rect.setAttribute('rx', 0);             // sharp corners
+
+  // white arrow pointing left
+  const arrow = document.createElementNS(svg.namespaceURI, 'path');
+  arrow.setAttribute('d', 'M 25 15 L 15 25 L 25 35');
+  arrow.setAttribute('stroke', '#ffffff');
+  arrow.setAttribute('stroke-width', '3');
+  arrow.setAttribute('fill', 'none');
+  arrow.setAttribute('stroke-linecap', 'round');
+  arrow.setAttribute('stroke-linejoin', 'round');
+
+  backGroup.appendChild(rect);
+  backGroup.appendChild(arrow);
+  svg.appendChild(backGroup);
+
+  // hover feedback (lighten background slightly)
+  backGroup.addEventListener('mouseenter', () => {
+    rect.setAttribute('fill', '#6a1160');
+  });
+  backGroup.addEventListener('mouseleave', () => {
+    rect.setAttribute('fill', '#540932');
+  });
+
+  backGroup.addEventListener('click', e => {
+    e.stopPropagation();
+    const prev = viewHistory.pop();
+    if (prev) {
+      themaSel.value = prev.thema;
+      fillSub();
+      subSel.value = prev.sub;
+      qInput.value = prev.q;
+      renderList();
+      drawChart();
+    }
+  });
+}
+
+  let tooltip=document.querySelector('.tooltip'); 
+  if(!tooltip){ 
+    tooltip=document.createElement('div'); 
+    tooltip.className='tooltip'; 
+    tooltip.style.display='none'; 
+    document.body.appendChild(tooltip); 
+  }
+  const moveTip=e=>{ tooltip.style.left=(e.clientX+12)+'px'; tooltip.style.top=(e.clientY+12)+'px'; };
+
+  const rows = filterData();
+
+  // group by theme
+  const byTheme = {};
+  rows.forEach(r => { (byTheme[r.thema] ||= []).push(r); });
+
+  const themeList = (themaSel.value ? [themaSel.value] : THEMES);
+  const nThemes = themeList.length;
+  const sector = 360/Math.max(1,nThemes);
+
+  // Radii (tweak these as desired)
+  const R_outer   = Math.min(width,height)*0.40;
+  const themeBand = R_outer*0.12;           // outer theme ring thickness
+  const subBand   = R_outer*0.12;           // sub-theme ring thickness
+  const R_subOut  = R_outer - themeBand;    // sub-theme ring outer radius
+  const R_subIn   = R_subOut - subBand;     // sub-theme ring inner radius
+  const innerHole = R_outer*0.12;           // center hole radius
+
+  // Ambitions region is inside the sub-theme ring
+  const R0        = R_subIn;
+  const R_labelOuter = R_subOut - subBand*0.15;  // just inside theme ring
+  const R_labelInner = R_subOut - subBand*0.65;  // small thickness
+  const scaleBands= 5;
+  const stripDepth= (R0 - innerHole)/scaleBands;
+
+  // For ambition hover pop-out
+  const ambMap = new Map();
+
+
+  // THEME RING
+  themeList.forEach((t,i)=>{
+    const a0=i*sector, a1=(i+1)*sector;
+
+    // THEME BAND (colored)
+    const themePath = document.createElementNS(svg.namespaceURI,'path');
+    themePath.setAttribute('d', arcPath(cx,cy, R_outer-themeBand, R_outer, a0, a1));
+    const baseCol = THEME_BASE[t] || '#999';
+    themePath.setAttribute('fill', baseCol);
+    themePath.setAttribute('stroke', '#fff');
+
+    themePath.onclick = ()=>{ 
+      // save current state
+      viewHistory.push({
+        thema: themaSel.value,
+        sub: subSel.value,
+        q: qInput.value
+      });
+      // change to the clicked theme
+      themaSel.value = t; 
+      fillSub(); 
+      subSel.value = '';
+      renderList(); 
+      drawChart();
+    };
+
+// --- THEME HOVER POP-OUT (theme + subthemes + ambitions + text) ---
+themePath.onmouseenter = e => {
+  tooltip.style.display = 'block';
+  const ambsInTheme = byTheme[t] || [];
+  const count = ambsInTheme.length;
+  tooltip.innerHTML = `<b>${t}</b><br><span class="muted">${count} ambitions</span>`;
+  moveTip(e);
+
+  // scale out the theme wedge
+  themePath.setAttribute('transform', `translate(${cx},${cy}) scale(1.06) translate(${-cx},${-cy})`);
+  themePath.setAttribute('stroke', baseCol);
+  themePath.setAttribute('stroke-width', '2');
+
+  // slightly enlarge the theme text and move it outward
+  document.querySelectorAll(`[data-theme="${t}"]`).forEach(txt => {
+    txt.setAttribute('transform', `translate(${cx},${cy}) scale(1.06) translate(${-cx},${-cy})`);
+    txt.setAttribute('font-size', '14'); // increase by ~10%
+    txt.setAttribute('font-weight', '700');
+  });
+
+  // pop out all subthemes
+  document.querySelectorAll(`[data-theme="${t}"]`).forEach(subEl => {
+    if (subEl.tagName === 'path') {
+      subEl.setAttribute('transform', `translate(${cx},${cy}) scale(1.05) translate(${-cx},${-cy})`);
+      subEl.setAttribute('stroke', baseCol);
+      subEl.setAttribute('stroke-width', '2');
+    }
+  });
+
+  // pop out all ambitions
+  ambMap.forEach((cells, id) => {
+    if (id.includes(t.replace(/[^\w]+/g, '_'))) {
+      cells.forEach(cell => {
+        cell.setAttribute('transform', `translate(${cx},${cy}) scale(1.04) translate(${-cx},${-cy})`);
+        cell.setAttribute('stroke', baseCol);
+        cell.setAttribute('stroke-width', '1');
+      });
+    }
+  });
+
+  // tooltip color
+  tooltip.style.background = baseCol;
+  const { l } = rgbToHsl(...Object.values(hexToRgb(baseCol)));
+  tooltip.style.color = l < 55 ? '#fff' : '#111';
+};
+
+themePath.onmouseleave = () => {
+  tooltip.style.display = 'none';
+
+  // reset theme wedge
+  themePath.removeAttribute('transform');
+  themePath.setAttribute('stroke', '#fff');
+  themePath.setAttribute('stroke-width', '1');
+
+  // reset theme text
+  document.querySelectorAll(`[data-theme="${t}"]`).forEach(txt => {
+    txt.removeAttribute('transform');
+    txt.setAttribute('font-size', '13');
+    txt.setAttribute('font-weight', '600');
+  });
+
+  // reset subthemes
+  document.querySelectorAll(`[data-theme="${t}"]`).forEach(subEl => {
+    if (subEl.tagName === 'path') {
+      subEl.removeAttribute('transform');
+      subEl.setAttribute('stroke', '#fff');
+      subEl.setAttribute('stroke-width', '0.7');
+    }
+  });
+
+  // reset ambitions
+  ambMap.forEach((cells, id) => {
+    if (id.includes(t.replace(/[^\w]+/g, '_'))) {
+      cells.forEach(cell => {
+        cell.removeAttribute('transform');
+        cell.setAttribute('stroke', '#fff');
+        cell.setAttribute('stroke-width', '0.7');
+      });
+    }
+  });
+};
+
+
+
+    svg.appendChild(themePath);
+
+        // curved theme label
+    const rLabel = R_outer - themeBand/2;
+    const pathId = `theme-arc-${i}`;
+
+    const midAngle = a0 + (a1 - a0) / 2;
+    const isBottom = midAngle > 90 && midAngle < 270;
+
+    // if bottom half → reverse arc direction
+    const d = isBottom
+      ? arcLinePath(cx, cy, rLabel, a1-2, a0+2, 0)  // reverse start and end
+      : arcLinePath(cx, cy, rLabel, a0+2, a1-2, 1);
+
+    const labelPath = document.createElementNS(svg.namespaceURI,'path');
+    labelPath.setAttribute('id', pathId);
+    labelPath.setAttribute('d', d);
+    labelPath.setAttribute('fill','none');
+    labelPath.setAttribute('stroke','none');
+    svg.appendChild(labelPath);
+
+  // Only draw highlight circle if *this* theme is currently selected
+  if (themaSel.value === t) {
+    const highlightCircle = document.createElementNS(svg.namespaceURI,'circle');
+    highlightCircle.setAttribute('cx', cx);
+    highlightCircle.setAttribute('cy', cy);
+    highlightCircle.setAttribute('r', rLabel + 14);   // size of the halo
+    highlightCircle.setAttribute('fill', baseCol);    // filled with theme color
+    highlightCircle.setAttribute('stroke', '#fff');   // thin border to separate
+    highlightCircle.setAttribute('stroke-width', '1');
+    highlightCircle.setAttribute('opacity', '0.25');  // transparency for visibility
+    svg.appendChild(highlightCircle);
+}
+
+
+    // text element
+    const tEl = document.createElementNS(svg.namespaceURI,'text');
+    tEl.setAttribute('font-size','12');
+    tEl.setAttribute('font-weight','600');
+    tEl.style.pointerEvents = 'none';
+
+    const tp = document.createElementNS(svg.namespaceURI,'textPath');
+    tp.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href',`#${pathId}`);
+    tp.setAttribute('startOffset','50%');
+    tp.setAttribute('text-anchor','middle');
+    tp.textContent = t;
+
+    tEl.appendChild(tp);
+    svg.appendChild(tEl);
+    tEl.dataset.theme = t;
+
+    
+    const L = labelPath.getTotalLength();
+    const target = Math.max(10, Math.min(14, Math.floor((L * 0.12) / Math.max(1, t.length))));
+    tEl.setAttribute('font-size', '13');  // same size as Veiligheid/Wonen
+
+    // SUB-THEME ring and labels
+    const ambsInTheme = byTheme[t] || [];
+    const subsInTheme = Array.from(new Set(ambsInTheme.map(r=>r.subthema))).sort();
+    const nSubs = Math.max(1, subsInTheme.length);
+    const subSector = (a1-a0)/nSubs;
+
+    subsInTheme.forEach((st, j)=>{
+      const s0 = a0 + j*subSector, s1 = s0 + subSector;
+      
+      // sub-theme slice
+      const subPath = document.createElementNS(svg.namespaceURI,'path');
+      subPath.setAttribute('d', arcPath(cx,cy, R_subIn, R_subOut, s0, s1));
+      const baseForTheme = THEME_BASE[t] || '#6b7280';
+      const subCol = themedScaleColor(baseForTheme, 0);
+      subPath.setAttribute('fill', subCol);
+      subPath.setAttribute('stroke', '#fff');
+
+      subPath.dataset.theme = t;
+      subPath.dataset.sub = st;
+
+      
+
+//POP-OUT FOR SUB-THEMES (Missing underlying ambition's)
+subPath.onmouseenter = e => {
+  tooltip.style.display = 'block';
+  const subAmbs = ambsInTheme.filter(r => r.subthema === st);
+  const count = subAmbs.length;
+  tooltip.innerHTML = `<b>${st}</b><br><span class="muted">${count} ambitions</span>`;
+  moveTip(e);
+
+  // pop out the subtheme segment
+  subPath.setAttribute('transform', `translate(${cx},${cy}) scale(1.05) translate(${-cx},${-cy})`);
+  subPath.setAttribute('stroke', baseForTheme);
+  subPath.setAttribute('stroke-width', '2');
+
+  // pop out all ambitions for this subtheme
+  subAmbs.forEach(rec => {
+    // match the same key used when registering ambMap
+    const keyPrefix = (rec.ambitie + '|' + rec.thema + '|' + rec.subthema).replace(/[^\w]+/g, '_');
+    // look through all stored keys and pop those starting with this prefix
+    ambMap.forEach((cells, id) => {
+      if (id.startsWith(keyPrefix)) {
+        cells.forEach(cell => {
+          cell.setAttribute('transform', `translate(${cx},${cy}) scale(1.05) translate(${-cx},${-cy})`);
+          cell.setAttribute('stroke', baseForTheme);
+          cell.setAttribute('stroke-width', '1.2');
+        });
+      }
+    });
+  });
+
+  // theme-based tooltip styling
+  tooltip.style.background = baseForTheme;
+  const { l } = rgbToHsl(...Object.values(hexToRgb(baseForTheme)));
+  tooltip.style.color = l < 55 ? '#fff' : '#111';
+};
+
+subPath.onmouseleave = () => {
+  tooltip.style.display = 'none';
+
+  // reset the subtheme segment
+  subPath.removeAttribute('transform');
+  subPath.setAttribute('stroke', '#fff');
+  subPath.setAttribute('stroke-width', '0.7');
+
+  // reset all ambitions belonging to this subtheme
+  ambMap.forEach((cells, id) => {
+    if (id.includes(st.replace(/[^\w]+/g, '_'))) {
+      cells.forEach(cell => {
+        cell.removeAttribute('transform');
+        cell.setAttribute('stroke', '#fff');
+        cell.setAttribute('stroke-width', '0.7');
+        cell.style.filter = '';
+      });
+    }
+  });
+};
+
+
+      subPath.onclick = ()=>{ 
+        viewHistory.push({
+          thema: themaSel.value,
+          sub: subSel.value,
+          q: qInput.value
+        });
+        themaSel.value = t; 
+        fillSub();
+        subSel.value = st;
+        renderList(); 
+        drawChart(); 
+      };
+      svg.appendChild(subPath);
+
+      // --- show curved ring label only when this subtheme is selected ---
+      if (subSel.value && subSel.value === st) {
+        const baseForTheme = THEME_BASE[t] || '#6b7280';
+        // ambition colour: same hue series as your scale bands, first band index 0
+        const ambitionCol  = themedScaleColor(baseForTheme, 0, SCALES.length);
+        const midColor     = blendHexColors(baseForTheme, ambitionCol, 0.45);
+
+        // ring sits in its own band between theme ring and ambitions
+        const R_labelOuter = R_subOut - subBand*0.15;
+        const R_labelInner = R_subOut - subBand*0.65;
+
+        drawSubthemeRing(svg, st, midColor, cx, cy, R_labelInner, R_labelOuter, s0, s1);
+      }
+      // --- otherwise, keep normal horizontal label (for overview view) ---
+      else if (themaSel.value) {
+        placeSubLabelLeader(svg, st, baseForTheme, cx, cy, R_subOut, R_outer, themeBand, s0, s1);
+      }
+
+      
+      // ambitions
+      const ambitions = ambsInTheme.filter(r=>r.subthema===st);
+      const n = Math.max(1, ambitions.length);
+      const colAng = (s1 - s0)/n;
+
+      ambitions.forEach((rec,k)=>{
+        const c0 = s0 + k*colAng, c1 = c0 + colAng;
+        const aid = (rec.ambitie+'|'+rec.thema+'|'+rec.subthema+'|'+i+'|'+j+'|'+k).replace(/[^\w]+/g,'_');
+
+        SCALES.forEach((s, idx)=>{
+          const rr2 = R0 - idx*stripDepth;
+          const rr1 = rr2 - stripDepth + 0.5;
+          const cell = document.createElementNS(svg.namespaceURI,'path');
+          cell.setAttribute('d', arcPath(cx,cy, rr1, rr2, c0, c1));
+
+          const yes = rec.scales_yes.includes(s);
+          const base = THEME_BASE[rec.thema] || '#6b7280';
+          const color = themedScaleColor(base, idx, SCALES.length);
+          cell.setAttribute('fill', yes ? color : '#eee');
+          cell.setAttribute('stroke','#fff');
+          cell.setAttribute('stroke-width','0.7');
+
+          // register this cell for the ambition hover pop-out
+        if (!ambMap.has(aid)) ambMap.set(aid, []);
+        ambMap.get(aid).push(cell);
+
+        // hover handlers (pop out ALL segments for this ambition, theme outline only while hovered)
+        cell.onmouseenter = e => {
+          // Theme-colored tooltip
+          tooltip.style.display = 'block';
+          tooltip.style.background = THEME_BASE[rec.thema] || '#6b7280';
+          const { l } = rgbToHsl(...Object.values(hexToRgb(THEME_BASE[rec.thema] || '#6b7280')));
+          tooltip.style.color = l < 55 ? '#fff' : '#111';
+
+          const rows = SCALES.map(x =>
+            `${rec.scales_yes.includes(x)?'●':'○'} ${SCALE_LABELS[x]}${rec.scales_yes.includes(x)?' ✓':''}`
+          ).join('<br>');
+          tooltip.innerHTML = `<b>${rec.ambitie}</b><br>${rec.thema} • ${rec.subthema}<br>${rows}`;
+          moveTip(e);
+
+          // 🔹 Pop out + switch outline to theme color for ALL slices in this ambition
+          const arr = ambMap.get(aid) || [];
+          arr.forEach(p => {
+          p.setAttribute('transform', `translate(${cx},${cy}) scale(1.05) translate(${-cx},${-cy})`);
+          const themeColor = THEME_BASE[rec.thema] || '#6b7280';
+          p.setAttribute('stroke', themeColor);
+          p.setAttribute('stroke-width', '1.2');
+        });
+        };
+
+        cell.onmousemove = moveTip;
+
+        cell.onmouseleave = () => {
+          tooltip.style.display = 'none';
+          // 🔹 Revert all slices back to neutral outline + no transform
+          const arr = ambMap.get(aid) || [];
+          arr.forEach(p => {
+            p.removeAttribute('transform');
+            p.setAttribute('stroke', '#fff');    // back to original white outline
+            p.setAttribute('stroke-width', '0.7');
+            // p.style.filter = '';
+          });
+        };
+          
+          //cell.onclick = ()=>{ 
+            //themaSel.value = rec.thema; 
+            //fillSub(); 
+            //subSel.value = rec.subthema; 
+            //qInput.value = rec.ambitie; 
+            //renderList(); 
+            //drawChart();
+          //};
+          cell.style.cursor = 'default';
+
+          svg.appendChild(cell);
+        });
+        // After drawing the 5 cells for this ambition:
+        if (subSel.value && subSel.value === st) {
+          // anchor labels at the OUTER edge of the ambitions area (R0)
+          const labelBase = THEME_BASE[rec.thema] || '#6b7280';
+          placeAmbitionLabelLeader(svg, rec.ambitie, labelBase, cx, cy, R0, R_outer, c0, c1, k);
+        }
+      });
+    });
+  });
+
+  // center hole (click to reset)
+  const hole = document.createElementNS(svg.namespaceURI,'circle');
+  hole.setAttribute('cx',cx); 
+  hole.setAttribute('cy',cy); 
+  hole.setAttribute('r', innerHole);
+  hole.setAttribute('fill','#fff');
+  hole.style.cursor = 'pointer';
+  hole.addEventListener('click', e => {
+    e.stopPropagation();
+    themaSel.value = '';
+    fillSub();
+    subSel.value = '';
+    qInput.value = '';
+    renderList();
+    drawChart();
+  });
+  svg.appendChild(hole);
+
+  // theme spokes
+  const themeListFull = (themaSel.value ? [themaSel.value] : THEMES);
+  themeListFull.forEach((t,i)=>{
+    const ang = (i*(360/Math.max(1,themeListFull.length))) * Math.PI/180;
+    const x2 = cx + (R_outer)*Math.cos(ang- Math.PI/2);
+    const y2 = cy + (R_outer)*Math.sin(ang- Math.PI/2);
+    const line = document.createElementNS(svg.namespaceURI,'line');
+    line.setAttribute('x1',cx); line.setAttribute('y1',cy);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','#ccc'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+  });
+// --- HIGHLIGHT RINGS ---
+const highlightLayer = svg.querySelector('#highlightLayer');
+highlightLayer.innerHTML = ''; // clear old
+
+// highlight whole theme if selected
+if (themaSel.value) {
+  const t = themaSel.value;
+  const idx = THEMES.indexOf(t);
+  if (idx >= 0) {
+    const a0 = idx * sector;
+    const a1 = (idx+1) * sector;
+    const color = THEME_BASE[t] || '#540932';
+    const ring = drawHighlightRing(svg, cx, cy, innerHole, R_outer, a0, a1, color);
+    highlightLayer.appendChild(ring);
+  }
+}
+
+// highlight sub-theme if selected
+if (themaSel.value && subSel.value) {
+  const t = themaSel.value;
+  const ambs = byTheme[t] || [];
+  const subs = Array.from(new Set(ambs.map(r=>r.subthema))).sort();
+  const j = subs.indexOf(subSel.value);
+  if (j >= 0) {
+    const base0 = THEMES.indexOf(t)*sector;
+    const subSector = sector/subs.length;
+    const s0 = base0 + j*subSector;
+    const s1 = s0 + subSector;
+    const color = THEME_BASE[t] || '#540932';
+    const ring = drawHighlightRing(svg, cx, cy, innerHole, R_outer, s0, s1, color);
+    highlightLayer.appendChild(ring);
+  }
+}
+
+  // legend (theme-aware gradient)
+  legendDiv.innerHTML='';
+  const activeTheme = themaSel.value || null;
+  SCALES.forEach((s, idx)=>{
+    const el=document.createElement('div'); el.className='item';
+    if (activeTheme) {
+      const base = THEME_BASE[activeTheme] || '#6b7280';
+      const col  = themedScaleColor(base, idx, SCALES.length);
+      el.innerHTML = `<span class="swatch" style="background:${col}"></span><span>${SCALE_LABELS[s]}</span>`;
+    } else {
+      el.innerHTML = `<span class="swatch" style="background:#ddd"></span><span>${SCALE_LABELS[s]}</span>`;
+    }
+    legendDiv.appendChild(el);
+  });
+
+  // --- Draw subtheme focus ring after everything else ---
+// --- Draw white subtheme focus ring inside the theme ring ---
+if (subSel.value) {
+  const selectedTheme = themaSel.value;
+  const selectedSub   = subSel.value;
+  const baseColor     = THEME_BASE[selectedTheme] || '#6b7280';
+
+  const tIndex = THEMES.indexOf(selectedTheme);
+  if (tIndex >= 0) {
+    const sector = 360 / THEMES.length;
+    const a0 = tIndex * sector;
+    const a1 = a0 + sector;
+
+    const ambsInTheme = RECORDS.filter(r => r.thema === selectedTheme);
+    const subsInTheme = Array.from(new Set(ambsInTheme.map(r => r.subthema))).sort();
+    const nSubs = Math.max(1, subsInTheme.length);
+    const subSector = (a1 - a0) / nSubs;
+    const subIndex = subsInTheme.indexOf(selectedSub);
+    if (subIndex >= 0) {
+      const s0 = a0 + subIndex * subSector;
+      const s1 = s0 + subSector;
+
+      // make the white ring sit just inside the theme ring, not overlapping it
+      const innerR = R_subOut - (R_outer - R_subOut) * 0.9;
+      const outerR = R_subOut - (R_outer - R_subOut) * 0.4;
+
+      // draw it last so it’s above everything else
+      drawSubthemeRing(svg, selectedSub, baseColor, cx, cy, innerR, outerR, s0, s1);
+    }
+  }
+}
+
+}
+
+
+// --- bootstrap & events ---
+fillThema(); fillSub(); fillScales(); renderList(); drawChart();
+
+themaSel.addEventListener('change', ()=>{ fillSub(); renderList(); drawChart(); });
+subSel.addEventListener('change',   ()=>{ renderList(); drawChart(); });
+qInput.addEventListener('input',     ()=>{ renderList(); drawChart(); });
+
+document.getElementById('scales').addEventListener('change', ()=>{ renderList(); drawChart(); });
+
+
+
+resetBtn.addEventListener('click', ()=>{
+  themaSel.value=''; fillSub(); subSel.value=''; qInput.value='';
+  Array.from(document.querySelectorAll('#scales input[type=checkbox]')).forEach(c=>c.checked=false);
+  renderList(); drawChart();
+});
+
+exportBtn.addEventListener('click', ()=>{
+  const rows = filterData();
+  const header = ['thema','subthema','ambitie','scales_yes'];
+  const csv = [header.join(',')].concat(rows.map(r=>{
+    return [r.thema, r.subthema, `"${r.ambitie.replace(/"/g,'""')}"`, `"${r.scales_yes.join('|')}"`].join(',');
+  })).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='ambitions_filtered.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+});
+
+// keep chart responsive
+window.addEventListener('resize', ()=> drawChart());
+</script>
+</body>
+</html>
