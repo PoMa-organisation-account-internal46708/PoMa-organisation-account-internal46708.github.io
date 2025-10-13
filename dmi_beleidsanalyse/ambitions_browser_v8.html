@@ -9,7 +9,7 @@
    color: #540932; /* default dark text */
  }
  h1 {
-   font-size: 19px;
+   font-size: 20px;
    margin-bottom: 8px;
    color: #540932;
  }
@@ -17,7 +17,24 @@
  .layout > .panel:last-child {position: sticky; top: 20px;   /* space from top when sticking */ height: fit-content; /* shrink-wrap around the diagram */}
  .layout > .panel:first-child {max-height: 100vh; overflow-y: auto;}
  .panel { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px; background: #fff; color: #540932; }
- .controls { display: grid; grid-template-columns: repeat(2,minmax(180px,1fr)); gap: 10px; align-items: end; margin-bottom: 10px; }
+ .controls{
+  display:grid;
+  /* let columns shrink cleanly */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  align-items:end;
+  margin-bottom:10px;
+}
+
+/* allow grid children to shrink instead of overflowing/clipping */
+.controls > *{ min-width:0; }
+
+/* inputs should size to their container */
+select,
+input[type=text]{
+  width:100%;
+  box-sizing:border-box;
+}
  label { display: block; font-size: 10px; margin-bottom: 4px; color: #540932; }
 
  select, input[type=text] {
@@ -73,22 +90,24 @@
 <div class="layout">
   <div class="panel">
     <div class="controls">
-      <div><label for="thema">Theme</label><select id="thema"><option value="">All themes</option></select></div>
-      <div><label for="sub">Sub-theme</label><select id="sub"><option value="">All sub-themes</option></select></div>
-      <div style="grid-column: span 2;">
-        <label>Scale filter</label>
-        <div class="checkboxes" id="scales"></div>
-      </div>
-      <div style="grid-column: span 2;">
-        <label for="q">Search text</label><input type="text" id="q" placeholder="Search ambition text…"/>
-      </div>
+      <div><label for="thema">Thema</label><select id="thema"><option value="">Alle thema’s</option></select></div>
+      <div><label for="sub">Subthema</label><select id="sub"><option value="">Alle subthema’s</option></select></div>
+      <div style="grid-column: 1 / -1;">
+  <label>Schaalfilter</label>
+  <div class="checkboxes" id="scales"></div>
+</div>
+
+<div style="grid-column: 1 / -1;">
+  <label for="q">Zoektekst</label>
+  <input type="text" id="q" placeholder="Zoek ambitie…"/>
+</div>
     </div>
     <div class="actions">
       <div class="count" id="count"></div>
-      <button id="reset">Reset filters</button>
-      <button id="export">Export CSV (current filter)</button>
+      <button id="reset">Filters resetten</button>
+      <button id="export">Exporteer CSV (huidige filter)</button>
     </div>
-    <p class="mutep">Tip: hover the chart to preview; click a theme to focus or an ambition to filter the list.</p>
+    <p class="mutep">Tip: beweeg over de grafiek om te bekijken; klik op een thema om te focussen of op een ambitie om de lijst te filteren.</p>
     <div id="list"></div>
   </div>
   <div class="panel">
@@ -132,7 +151,7 @@ const THEME_BASE = {
 
 function uniq(a){ return Array.from(new Set(a)); }
 function fillThema(){
-  themaSel.innerHTML = '<option value="">All themes</option>' +
+  themaSel.innerHTML = '<option value="">Alle thema’s</option>' +
     THEMES.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 function fillSub(){
@@ -140,7 +159,7 @@ function fillSub(){
   const subs = t
     ? uniq(RECORDS.filter(r=>r.thema===t).map(r=>r.subthema))
     : uniq(RECORDS.map(r=>r.subthema));
-  subSel.innerHTML = '<option value="">All sub-themes</option>' +
+  subSel.innerHTML = '<option value="">Alle subthema’s</option>' +
     subs.sort().map(s=>`<option value="${s}">${s}</option>`).join('');
 }
 function fillScales(){
@@ -170,7 +189,7 @@ function filterData(){
 
 function renderList(){
   const rows = filterData();
-  countDiv.textContent = `Showing ${rows.length} ambitions`;
+  countDiv.textContent = `Toont ${rows.length} ambities`;
   listDiv.innerHTML = rows.map(d=>`
     <div class="card">
       <div class="row"><div><strong>${d.ambitie}</strong></div><div class="muted">${d.thema} • ${d.subthema}</div></div>
@@ -277,31 +296,30 @@ function addCurvedRingLabel(svg, text, color, cx, cy, radius, a0, a1) {
   p.setAttribute('stroke', 'none');
   svg.appendChild(p);
 
-  const tEl = document.createElementNS(svg.namespaceURI, 'text');
-  tEl.setAttribute('fill', color);
-  tEl.setAttribute('font-weight', '700');
-  tEl.setAttribute('font-size', '12');
-  tEl.style.pointerEvents = 'none';
+  // Create the text element without fixed size first
+const tEl = document.createElementNS(svg.namespaceURI,'text');
+tEl.setAttribute('font-weight','600');
+tEl.style.pointerEvents = 'none';
 
-  const tp = document.createElementNS(svg.namespaceURI, 'textPath');
-  tp.setAttribute('href', `#${id}`);
-  tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${id}`);
-  tp.setAttribute('startOffset', '50%');
-  tp.setAttribute('text-anchor', 'middle');
-  tp.textContent = text;
+// Create the textPath as before
+const tp = document.createElementNS(svg.namespaceURI,'textPath');
+tp.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href',`#${pathId}`);
+tp.setAttribute('startOffset','50%');
+tp.setAttribute('text-anchor','middle');
+tp.textContent = t;
 
-  // auto-shrink to fit the arc
-  // (rough heuristic: 11–15px depending on arc length vs characters)
-  // You can tweak if you prefer a fixed size.
-  requestAnimationFrame(() => {
-    const L = p.getTotalLength();
-    const target = Math.max(11, Math.min(15, Math.floor((L * 0.14) / Math.max(1, text.length))));
-    tEl.setAttribute('font-size', String(target));
-  });
+tEl.appendChild(tp);
+svg.appendChild(tEl);
+tEl.dataset.theme = t;
 
-  tEl.appendChild(tp);
-  svg.appendChild(tEl);
-}
+// --- dynamic font sizing to prevent clipping ---
+const L = labelPath.getTotalLength();          // arc length
+const nameLength = t.length;                   // number of characters
+const arcPerChar = L / nameLength;             // space available per character
+// heuristic: convert arc length per character into px font size
+let fontSize = Math.min(14, Math.max(9, arcPerChar * 0.3));  
+// ensures it stays within 9–14 px
+tEl.setAttribute('font-size', fontSize.toFixed(1));
 
 
 function placeAmbitionLabelLeader(svg, textStr, baseColor, cx, cy, rAnchor, rOuter, a0, a1) {
@@ -685,7 +703,7 @@ themePath.onmouseenter = e => {
   tooltip.style.display = 'block';
   const ambsInTheme = byTheme[t] || [];
   const count = ambsInTheme.length;
-  tooltip.innerHTML = `<b>${t}</b><br><span class="muted">${count} ambitions</span>`;
+  tooltip.innerHTML = `<b>${t}</b><br><span class="muted">${count} ambities</span>`;
   moveTip(e);
 
   // scale out the theme wedge
@@ -847,7 +865,7 @@ subPath.onmouseenter = e => {
   tooltip.style.display = 'block';
   const subAmbs = ambsInTheme.filter(r => r.subthema === st);
   const count = subAmbs.length;
-  tooltip.innerHTML = `<b>${st}</b><br><span class="muted">${count} ambitions</span>`;
+  tooltip.innerHTML = `<b>${st}</b><br><span class="muted">${count} ambities</span>`;
   moveTip(e);
 
   // pop out the subtheme segment
@@ -866,6 +884,7 @@ subPath.onmouseenter = e => {
           cell.setAttribute('transform', `translate(${cx},${cy}) scale(1.05) translate(${-cx},${-cy})`);
           cell.setAttribute('stroke', baseForTheme);
           cell.setAttribute('stroke-width', '1.2');
+
         });
       }
     });
@@ -1157,7 +1176,7 @@ exportBtn.addEventListener('click', ()=>{
   })).join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='ambitions_filtered.csv';
+  const a = document.createElement('a'); a.href=url; a.download='ambities_filtered.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 });
 
