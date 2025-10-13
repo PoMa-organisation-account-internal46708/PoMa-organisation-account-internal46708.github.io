@@ -296,30 +296,31 @@ function addCurvedRingLabel(svg, text, color, cx, cy, radius, a0, a1) {
   p.setAttribute('stroke', 'none');
   svg.appendChild(p);
 
-  // Create the text element without fixed size first
-const tEl = document.createElementNS(svg.namespaceURI,'text');
-tEl.setAttribute('font-weight','600');
-tEl.style.pointerEvents = 'none';
+  const tEl = document.createElementNS(svg.namespaceURI, 'text');
+  tEl.setAttribute('fill', color);
+  tEl.setAttribute('font-weight', '700');
+  tEl.setAttribute('font-size', '12');
+  tEl.style.pointerEvents = 'none';
 
-// Create the textPath as before
-const tp = document.createElementNS(svg.namespaceURI,'textPath');
-tp.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href',`#${pathId}`);
-tp.setAttribute('startOffset','50%');
-tp.setAttribute('text-anchor','middle');
-tp.textContent = t;
+  const tp = document.createElementNS(svg.namespaceURI, 'textPath');
+  tp.setAttribute('href', `#${id}`);
+  tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${id}`);
+  tp.setAttribute('startOffset', '50%');
+  tp.setAttribute('text-anchor', 'middle');
+  tp.textContent = text;
 
-tEl.appendChild(tp);
-svg.appendChild(tEl);
-tEl.dataset.theme = t;
+  // auto-shrink to fit the arc
+  // (rough heuristic: 11–15px depending on arc length vs characters)
+  // You can tweak if you prefer a fixed size.
+  requestAnimationFrame(() => {
+    const L = p.getTotalLength();
+    const target = Math.max(11, Math.min(15, Math.floor((L * 0.14) / Math.max(1, text.length))));
+    tEl.setAttribute('font-size', String(target));
+  });
 
-// --- dynamic font sizing to prevent clipping ---
-const L = labelPath.getTotalLength();          // arc length
-const nameLength = t.length;                   // number of characters
-const arcPerChar = L / nameLength;             // space available per character
-// heuristic: convert arc length per character into px font size
-let fontSize = Math.min(14, Math.max(9, arcPerChar * 0.3));  
-// ensures it stays within 9–14 px
-tEl.setAttribute('font-size', fontSize.toFixed(1));
+  tEl.appendChild(tp);
+  svg.appendChild(tEl);
+}
 
 
 function placeAmbitionLabelLeader(svg, textStr, baseColor, cx, cy, rAnchor, rOuter, a0, a1) {
@@ -558,12 +559,14 @@ function drawChart(){
   chartDiv.appendChild(svg);
 
   // create layered groups
-  const gThemes   = document.createElementNS(svg.namespaceURI, 'g'); // theme wedges + labels
-  const gSub      = document.createElementNS(svg.namespaceURI, 'g'); // sub-theme wedges + labels
-  const gAmb      = document.createElementNS(svg.namespaceURI, 'g'); // ambitions + leaders
-  const gOverlay  = document.createElementNS(svg.namespaceURI, 'g'); // highlight + theme text
+  const gThemes   = document.createElementNS(svg.namespaceURI, 'g');
+  const gSub      = document.createElementNS(svg.namespaceURI, 'g');
+  const gAmb      = document.createElementNS(svg.namespaceURI, 'g');
+  const gOverlay  = document.createElementNS(svg.namespaceURI, 'g');
+
+  // new highlight layer with ID (for later querySelector)
   const gHighlight = document.createElementNS(svg.namespaceURI, 'g');
-  
+  gHighlight.setAttribute('id', 'highlightLayer');
 
 
   svg.appendChild(gThemes);
