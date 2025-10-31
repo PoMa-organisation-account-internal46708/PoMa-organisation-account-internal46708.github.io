@@ -9,7 +9,7 @@
 }
  body {
    font-family: "Aptos", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-   margin: 24px;
+   margin: 10px;
    color: #540932; /* default dark text */
  }
  h1 {
@@ -21,16 +21,19 @@
  .layout > .panel:first-child,
   .layout > .panel:last-child {
     max-height: 90vh;  /* slightly less than body to leave breathing room */
-    overflow-y: auto;
+    overflow-y: hidden;
   }
- /* .layout > .panel:last-child {position: sticky; top: 20px;   /* space from top when sticking */ height: fit-content; /* shrink-wrap around the diagram */}
+ .layout > .panel:last-child {
+  padding-top: 30px;
+  padding-bottom: 0px; /* lighter bottom padding */
+}
  .layout {
   display: grid;
   grid-template-columns: 460px 1fr;
   gap: 20px;
   align-items: stretch; /* both panels same height */
 }
-.panel { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px; background: #fff; color: #540932; }
+.panel { border: 1px solid #e5e5e5; border-radius: 12px; padding: 8px; background: #fff; color: #540932; }
  .controls{
   display:grid;
   /* let columns shrink cleanly */
@@ -79,13 +82,13 @@ input[type=text]{
 }
   .legend {
     position: absolute;
-    bottom: 20px;
+    bottom: 60px;
     right: 20px;
     display: flex;
     flex-direction: column;     /* stack vertically */
     gap: 6px;
     background: rgba(255, 255, 255, 0.9); /* subtle white overlay for readability */
-    padding: 6px 10px;
+    padding: 4px 10px;
     border-radius: 8px;
     border: 1px solid #ddd;
     color: #540932;
@@ -672,7 +675,7 @@ function drawHighlightRing(svg, cx, cy, rInner, rOuter, a0, a1, color = '#540932
 function drawChart(){
   const chartDiv=document.getElementById('chart'); 
   chartDiv.innerHTML='';
-  const width=chartDiv.clientWidth, height=820, cx=width/2, cy=height*0.45;
+  const width=chartDiv.clientWidth, height=780, cx=width/2, cy=height*0.45;
 
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width',width); 
@@ -1209,7 +1212,7 @@ if (themaSel.value && subSel.value) {
     legendDiv.appendChild(el);
   });
 
-
+  
 
   // BACK button (appears only when history exists)
 if (viewHistory.length || themaSel.value || subSel.value) {
@@ -1219,7 +1222,7 @@ if (viewHistory.length || themaSel.value || subSel.value) {
   // solid rectangle, corporate purple, no rounded corners
   const rect = document.createElementNS(svg.namespaceURI, 'rect');
   rect.setAttribute('x', 80);
-  rect.setAttribute('y', 10);
+  rect.setAttribute('y', 50);
   rect.setAttribute('width', 30);
   rect.setAttribute('height', 30);
   rect.setAttribute('fill', '#540932');   // same as text colour
@@ -1228,7 +1231,8 @@ if (viewHistory.length || themaSel.value || subSel.value) {
 
   // white arrow pointing left
   const arrow = document.createElementNS(svg.namespaceURI, 'path');
-  arrow.setAttribute('d', 'M 100 15 L 90 25 L 100 35');
+  // centered within the rectangle at (95, 65)
+  arrow.setAttribute('d', 'M 100 55 L 90 65 L 100 75'); 
   arrow.setAttribute('stroke', '#ffffff');
   arrow.setAttribute('stroke-width', '3');
   arrow.setAttribute('fill', 'none');
