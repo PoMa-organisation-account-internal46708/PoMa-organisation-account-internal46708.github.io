@@ -21,11 +21,14 @@
  .layout > .panel:first-child,
   .layout > .panel:last-child {
     max-height: 90vh;  /* slightly less than body to leave breathing room */
-    overflow-y: hidden;
   }
  .layout > .panel:last-child {
   padding-top: 30px;
   padding-bottom: 0px; /* lighter bottom padding */
+  overflow-y: hidden;
+}
+.layout > .panel:first-child {
+  overflow-y: auto;
 }
  .layout {
   display: grid;
@@ -675,7 +678,7 @@ function drawHighlightRing(svg, cx, cy, rInner, rOuter, a0, a1, color = '#540932
 function drawChart(){
   const chartDiv=document.getElementById('chart'); 
   chartDiv.innerHTML='';
-  const width=chartDiv.clientWidth, height=650, cx=width/2, cy=height*0.45;
+  const width=chartDiv.clientWidth, height=700, cx=width/2, cy=height*0.45;
 
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width',width); 
