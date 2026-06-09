@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clusters</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F0;--paper:#FDFCF9;--ink:#1C1916;--muted:#6B6560;
+  --border:#E2DDD8;--dim:#C8C3BE;
+  --accent:#5C1F2E;--accent2:#1B4B6B;--accent3:#2D6A4F;
+  --shadow:0 2px 12px rgba(28,25,22,.08);--shadow-lg:0 8px 32px rgba(28,25,22,.14);
+  --r:10px;--r-sm:6px;
+  --leef:#2D8A52;--leef-l:#D4EAD8;
+  --veil:#C45A1A;--veil-l:#FDEBD0;
+  --duur:#1A7A62;--duur-l:#D0E8DF;
+  --soci:#2455C9;--soci-l:#D0D8F4;
+  --door:#6E2E8D;--door-l:#EDE0F8;
+  --econ:#B87800;--econ-l:#F8EDD0;
+  --c1:#D4365A;--c2:#E07020;--c3:#2A8040;--c4:#1A6DAF;
+  --c5:#C03030;--c6:#6050B0;--c7:#B07020;--c8:#10908A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+.view{display:block;padding:36px 48px 80px;max-width:1400px}
+@media(max-width:700px){.view{padding:24px 18px 60px}}
+/* CLUSTERS WAAIER */
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+@media(max-width:420px){.cluster-grid{grid-template-columns:1fr}}
+.cl-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:.18s;cursor:pointer}
+.cl-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.cl-bar{height:4px}
+.cl-body{padding:18px 20px}
+.cl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cl-num{font-family:'DM Serif Display',serif;font-size:36px;line-height:1;opacity:.12;color:var(--ink)}
+.cl-niveau{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:20px}
+.nl-S{background:#EDE0F8;color:var(--door)}
+.nl-T{background:#D0D8F4;color:var(--soci)}
+.nl-O{background:#D4EAD8;color:var(--leef)}
+.cl-name{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;line-height:1.3;margin-bottom:8px}
+.cl-sec-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px;margin-top:12px}
+.cl-text{font-size:12px;line-height:1.65;color:var(--ink)}
+.cl-tension{background:#FFF4EE;border:1px solid #FFD8B8;border-radius:var(--r-sm);padding:8px 11px;font-size:11.5px;line-height:1.6;color:#7A3200;margin-top:10px}
+.cl-tension::before{content:"⚡ "}
+.waaier-container{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;margin-bottom:32px}
+#waaierSvg{flex-shrink:0;max-width:100%;height:auto;overflow:visible}
+.waaier-detail{flex:1;min-width:260px;max-width:380px}
+.wd-title{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:6px}
+.wd-niveau{margin-bottom:12px}
+.wd-sec{margin-bottom:12px}
+.wd-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+.wd-text{font-size:13px;line-height:1.7}
+.reset-btn{margin-top:16px;padding:8px 14px;border:1px solid var(--border);border-radius:20px;background:var(--paper);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);transition:.15s}
+.reset-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tt{position:fixed;background:var(--ink);color:var(--paper);border-radius:8px;padding:10px 14px;font-size:12px;pointer-events:none;opacity:0;transition:.1s;z-index:999;max-width:240px;line-height:1.6}
+.tt strong{display:block;font-size:13px;margin-bottom:3px}
+</style>
+</head>
+<body>
+
+<div id="v-cl" class="view">
+  <div class="waaier-container">
+    <svg id="waaierSvg" width="640" height="520"></svg>
+    <div class="waaier-detail" id="waaierDetail">
+      <p style="color:var(--muted);font-size:13px;padding-top:40px">← Klik op een cluster in de waaier voor meer informatie.</p>
+    </div>
+  </div>
+  <div class="cluster-grid" id="clGrid"></div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const CLUSTERS_DATA = [
+  {naam:'C1: Inclusieve Nabijheid & Zorg',n:23,niveau:'T',hex:'#D4365A',rechtvaardiging:'Voorkomen van vervoersarmoede, participatie van mindervaliden borgen en toegankelijkheid garanderen voor medische (thuis)zorg en mantelzorgers.',gebiedstypen:'Autoluwe binnensteden, voetgangerszones, woonwijken en zorghubs.',spanningsveld:'Autoluwe beleidsambities versus de harde afhankelijkheid van gemotoriseerd vervoer door kwetsbare doelgroepen.'},
+  {naam:'C2: Prioritering Nood- & Hulpdiensten',n:10,niveau:'O',hex:'#E07020',rechtvaardiging:'Garanderen van wettelijke aanrijdtijden ter bescherming van de veiligheid van inwoners.',gebiedstypen:'Binnensteden, afgesloten straten, 30 km/u-zones.',spanningsveld:'Autoluwe rust en ruimtelijke barrières versus de absolute noodzaak voor snelle calamiteitendoorgang.'},
+  {naam:'C3: Weren Sluip- & Wijkvreemd Verkeer',n:28,niveau:'T',hex:'#2A8040',rechtvaardiging:'Beschermen van de leefomgeving van aanwonenden door interwijk-, forenzen- en zoekverkeer via randwegen te leiden.',gebiedstypen:'Erftoegangswegen, naoorlogse en bestaande woonwijken.',spanningsveld:'Efficiënte routes voor regionaal autoverkeer versus lokale leefbaarheid voor bewoners.'},
+  {naam:'C4: Veiligheid Kwetsbare Verkeersdeelnemers',n:20,niveau:'T',hex:'#1A6DAF',rechtvaardiging:'Fysiek scheiden van grote voertuigen en jonge/langzame verkeersdeelnemers.',gebiedstypen:'Schoolstraten, onderwijsclusters.',spanningsveld:'Gemak voor (haal- en breng)ouders versus kwetsbaarheid van fietsende kinderen.'},
+  {naam:'C5: Emissievrije & Gebundelde Stadslogistiek',n:26,niveau:'S',hex:'#C03030',rechtvaardiging:'Terugdringen van luchtvervuiling en CO₂ en behalen van klimaatdoelstellingen.',gebiedstypen:'Binnensteden, Zero-emissiezone Centrum.',spanningsveld:'Logistieke efficiëntie (bedrijven) versus verblijfskwaliteit en gezondheid (bewoners).'},
+  {naam:'C6: Bescherming Kwetsbare Natuurgebieden',n:12,niveau:'S',hex:'#6050B0',rechtvaardiging:'Beschermen van biodiversiteit, stikstofreductie en recreatieve rust in ecologische hoofdstructuren.',gebiedstypen:'Bossen, heide, duinen (Natura 2000), groen-blauwe randen.',spanningsveld:'Recreatiedruk van dagtoeristen versus kwetsbare flora en fauna.'},
+  {naam:'C7: Fysiek Erfgoed & Infrastructuur',n:7,niveau:'T',hex:'#B07020',rechtvaardiging:'Voorkomen van structurele schade aan middeleeuwse werfkelders, walmuren en bruggen door aslastlimieten.',gebiedstypen:'Stadsentra, oude kades, nieuwbouwlocaties.',spanningsveld:'Operationele doorlooptijden van projectontwikkelaars versus veiligheid in smalle straatprofielen.'},
+  {naam:'C8: Toerisme, Reuring & Evenementen',n:10,niveau:'T',hex:'#10908A',rechtvaardiging:'Horecapleinen en toeristische locaties buiten bezoekerstijden bevoorraden.',gebiedstypen:'Smalle winkelstraten, horecapleinen.',spanningsveld:'Logistieke ritplanning versus piekmoment van ontspanning door bezoekers.'},
+];
+
+const TT = document.getElementById('tt');
+function showTT(e,html){ TT.innerHTML=html; TT.style.opacity='1'; moveTT(e); }
+function moveTT(e){ TT.style.left=(e.clientX+14)+'px'; TT.style.top=(e.clientY-50)+'px'; }
+function hideTT(){ TT.style.opacity='0'; }
+
+var selectedClusterIndex = null;
+var defaultDetailHTML = '<p style="color:var(--muted);font-size:13px;padding-top:40px">← Klik op een cluster in de waaier voor meer informatie.</p>';
+
+(function(){
+  const W=640,H=520,cx=W/2,cy=H/2,R=135,ri=55;
+  const svg=document.getElementById('waaierSvg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+
+  const tot=CLUSTERS_DATA.reduce((s,c)=>s+c.n,0);
+  let angle=-Math.PI/2;
+  const PAD=0.025;
+
+  function cleanName(c){ return c.naam.replace(/^C\d+: /,''); }
+  function splitLabel(text, maxLen){
+    const words=text.split(' ');
+    const lines=[];
+    let line='';
+    words.forEach(w=>{
+      const test=line ? line + ' ' + w : w;
+      if(test.length>maxLen && line){ lines.push(line); line=w; }
+      else { line=test; }
+    });
+    if(line) lines.push(line);
+    return lines.slice(0,3);
+  }
+  function svgEl(tag){ return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+
+  function setSelected(index){
+    selectedClusterIndex=index;
+    document.querySelectorAll('.slice-path').forEach((el,idx)=>{
+      el.setAttribute('opacity', idx===index ? '1' : '0.22');
+      el.setAttribute('stroke-width', idx===index ? '3' : '1.5');
+    });
+    document.querySelectorAll('.leader-line,.leader-dot,.slice-label,.slice-count').forEach((el)=>{
+      const idx=Number(el.dataset.idx);
+      el.setAttribute('opacity', idx===index ? '1' : '0.28');
+      if(el.classList.contains('slice-label')) el.setAttribute('font-weight', idx===index ? '700' : '500');
+    });
+    document.querySelectorAll('.cl-card').forEach((el,idx)=>{
+      el.style.opacity = idx===index ? '1' : '0.35';
+      el.style.transform = idx===index ? 'translateY(-2px)' : 'none';
+    });
+  }
+
+  window.resetWaaier=function(){
+    selectedClusterIndex=null;
+    document.querySelectorAll('.slice-path').forEach((el)=>{
+      el.setAttribute('opacity','0.85');
+      el.setAttribute('stroke-width','1.5');
+    });
+    document.querySelectorAll('.leader-line,.leader-dot,.slice-label,.slice-count').forEach((el)=>{
+      el.setAttribute('opacity','1');
+      if(el.classList.contains('slice-label')) el.setAttribute('font-weight','500');
+    });
+    document.querySelectorAll('.cl-card').forEach((el)=>{
+      el.style.opacity='1';
+      el.style.transform='';
+    });
+    document.getElementById('waaierDetail').innerHTML=defaultDetailHTML;
+  };
+
+  CLUSTERS_DATA.forEach((c,i)=>{
+    const span=(c.n/tot)*(2*Math.PI)-PAD;
+    const x1=cx+R*Math.cos(angle),y1=cy+R*Math.sin(angle);
+    const x2=cx+R*Math.cos(angle+span),y2=cy+R*Math.sin(angle+span);
+    const ix1=cx+ri*Math.cos(angle),iy1=cy+ri*Math.sin(angle);
+    const ix2=cx+ri*Math.cos(angle+span),iy2=cy+ri*Math.sin(angle+span);
+    const la=span>Math.PI?1:0;
+    const mid=angle+span/2;
+
+    const g=svgEl('g');
+    g.style.cursor='pointer';
+
+    const path=svgEl('path');
+    path.setAttribute('d',`M${x1},${y1} A${R},${R},0,${la},1,${x2},${y2} L${ix2},${iy2} A${ri},${ri},0,${la},0,${ix1},${iy1}Z`);
+    path.setAttribute('fill',c.hex);
+    path.setAttribute('opacity','0.85');
+    path.setAttribute('stroke','#fff');
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('class','slice-path');
+    path.dataset.idx=i;
+    path.style.transition='opacity .18s, stroke-width .18s';
+
+    const num=svgEl('text');
+    num.setAttribute('x',cx+(R+ri)/2*Math.cos(mid));
+    num.setAttribute('y',cy+(R+ri)/2*Math.sin(mid)+4);
+    num.setAttribute('text-anchor','middle');
+    num.setAttribute('fill','#fff');
+    num.setAttribute('font-size','13');
+    num.setAttribute('font-family','DM Serif Display,serif');
+    num.setAttribute('font-weight','700');
+    num.setAttribute('pointer-events','none');
+    num.textContent=c.n;
+
+    g.appendChild(path);
+    g.appendChild(num);
+    g.addEventListener('click',()=>{ showWaaierDetail(c,i); setSelected(i); });
+    g.addEventListener('mouseenter',e=>{
+      if(selectedClusterIndex===null) path.setAttribute('opacity','1');
+      showTT(e,`<strong>${cleanName(c)}</strong>${c.n} behoeften · ${c.niveau==='S'?'Strategisch':c.niveau==='T'?'Tactisch':'Operationeel'}`);
+    });
+    g.addEventListener('mousemove',moveTT);
+    g.addEventListener('mouseleave',()=>{
+      if(selectedClusterIndex===null) path.setAttribute('opacity','0.85');
+      hideTT();
+    });
+    svg.appendChild(g);
+
+    const anchorX = cx + (R+18)*Math.cos(mid);
+    const anchorY = cy + (R+18)*Math.sin(mid);
+    const elbowX = cx + (R+40)*Math.cos(mid);
+    const elbowY = cy + (R+40)*Math.sin(mid);
+    const rightSide = Math.cos(mid) >= 0;
+    const labelX = rightSide ? 500 : 140;
+    const labelY = elbowY;
+    const endX = rightSide ? labelX-10 : labelX+10;
+
+    const leader=svgEl('polyline');
+    leader.setAttribute('points',`${anchorX},${anchorY} ${elbowX},${elbowY} ${endX},${labelY}`);
+    leader.setAttribute('fill','none');
+    leader.setAttribute('stroke',c.hex);
+    leader.setAttribute('stroke-width','1.2');
+    leader.setAttribute('opacity','1');
+    leader.setAttribute('class','leader-line');
+    leader.dataset.idx=i;
+    leader.style.transition='opacity .18s';
+    svg.appendChild(leader);
+
+    const dot=svgEl('circle');
+    dot.setAttribute('cx',anchorX);dot.setAttribute('cy',anchorY);dot.setAttribute('r','3');
+    dot.setAttribute('fill',c.hex);dot.setAttribute('class','leader-dot');dot.dataset.idx=i;
+    dot.style.transition='opacity .18s';
+    svg.appendChild(dot);
+
+    const text=svgEl('text');
+    text.setAttribute('x',labelX);
+    text.setAttribute('y',labelY-10);
+    text.setAttribute('text-anchor',rightSide?'start':'end');
+    text.setAttribute('fill','#1C1916');
+    text.setAttribute('font-size','11');
+    text.setAttribute('font-family','DM Sans,sans-serif');
+    text.setAttribute('font-weight','500');
+    text.setAttribute('class','slice-label');
+    text.dataset.idx=i;
+    text.style.transition='opacity .18s';
+    splitLabel(cleanName(c), 22).forEach((line,lineIdx)=>{
+      const tspan=svgEl('tspan');
+      tspan.setAttribute('x',labelX);
+      tspan.setAttribute('dy',lineIdx===0 ? '0' : '13');
+      tspan.textContent=line;
+      text.appendChild(tspan);
+    });
+    svg.appendChild(text);
+
+    angle+=span+PAD;
+  });
+
+  const ct=svgEl('text');
+  ct.setAttribute('x',cx);ct.setAttribute('y',cy);ct.setAttribute('text-anchor','middle');
+  ct.setAttribute('fill','#1C1916');ct.setAttribute('font-size','18');
+  ct.setAttribute('font-family','DM Serif Display,serif');ct.textContent='8';svg.appendChild(ct);
+  const cs=svgEl('text');
+  cs.setAttribute('x',cx);cs.setAttribute('y',cy+14);cs.setAttribute('text-anchor','middle');
+  cs.setAttribute('fill','#6B6560');cs.setAttribute('font-size','8');
+  cs.setAttribute('font-family','DM Sans,sans-serif');cs.setAttribute('letter-spacing','0.1em');
+  cs.textContent='CLUSTERS';svg.appendChild(cs);
+})();
+
+function showWaaierDetail(c,i){
+  const niv={'S':'Strategisch','T':'Tactisch','O':'Operationeel'};
+  const nivCls={'S':'nl-S','T':'nl-T','O':'nl-O'};
+  document.getElementById('waaierDetail').innerHTML=`
+    <div style="border-left:3px solid ${c.hex};padding-left:16px">
+      <div class="wd-niveau"><span class="cl-niveau ${nivCls[c.niveau]}">${niv[c.niveau]}</span></div>
+      <div class="wd-title">${c.naam.replace(/^C\d+: /,'')}</div>
+      <div class="wd-sec"><div class="wd-sec-title">Maatschappelijke rechtvaardiging</div><div class="wd-text">${c.rechtvaardiging}</div></div>
+      <div class="wd-sec"><div class="wd-sec-title">Dominante gebiedstypen</div><div class="wd-text">${c.gebiedstypen}</div></div>
+      <div class="wd-sec"><div class="wd-sec-title">Spanningsveld</div><div style="background:#FFF4EE;border:1px solid #FFD8B8;border-radius:6px;padding:8px 12px;font-size:12px;line-height:1.6;color:#7A3200">⚡ ${c.spanningsveld}</div></div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)"><strong style="font-family:'DM Serif Display',serif;font-size:20px;color:${c.hex}">${c.n}</strong> behoeften in longlist</div>
+      <button class="reset-btn" type="button" onclick="resetWaaier()">Reset pie chart</button>
+    </div>`;
+}
+
+function selectClusterFromCard(i){
+  showWaaierDetail(CLUSTERS_DATA[i],i);
+  selectedClusterIndex=i;
+  document.querySelectorAll('.slice-path').forEach((el,idx)=>{
+    el.setAttribute('opacity', idx===i ? '1' : '0.22');
+    el.setAttribute('stroke-width', idx===i ? '3' : '1.5');
+  });
+  document.querySelectorAll('.leader-line,.leader-dot,.slice-label,.slice-count').forEach((el)=>{
+    const idx=Number(el.dataset.idx);
+    el.setAttribute('opacity', idx===i ? '1' : '0.28');
+    if(el.classList.contains('slice-label')) el.setAttribute('font-weight', idx===i ? '700' : '500');
+  });
+  document.querySelectorAll('.cl-card').forEach((el,idx)=>{
+    el.style.opacity = idx===i ? '1' : '0.35';
+    el.style.transform = idx===i ? 'translateY(-2px)' : 'none';
+  });
+}
+
+document.getElementById('clGrid').innerHTML=CLUSTERS_DATA.map((c,i)=>{
+  const niv={'S':'Strategisch','T':'Tactisch','O':'Operationeel'};
+  const nivCls={'S':'nl-S','T':'nl-T','O':'nl-O'};
+  return `<div class="cl-card" onclick="selectClusterFromCard(${i})">
+    <div class="cl-bar" style="background:${c.hex}"></div>
+    <div class="cl-body">
+      <div class="cl-top"><div class="cl-num">${i+1}</div><div class="cl-niveau ${nivCls[c.niveau]}">${niv[c.niveau]}</div></div>
+      <div class="cl-name">${c.naam.replace(/^C\d+: /,'')}</div>
+      <div class="cl-sec-title">Rechtvaardiging</div>
+      <div class="cl-text">${c.rechtvaardiging}</div>
+      <div class="cl-tension">${c.spanningsveld}</div>
+      <div class="cl-sec-title" style="margin-top:10px">Gebiedstypen</div>
+      <div class="cl-text" style="color:var(--muted);font-size:11.5px">📍 ${c.gebiedstypen}</div>
+    </div>
+  </div>`;
+}).join('');
+</script>
+</body>
+</html>
