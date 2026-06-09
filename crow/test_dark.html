@@ -3,231 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Selectieve Toegang — Visuele Analyse</title>
+<title>Doelgroepen</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#07080C;--surface:#0E1018;--card:#151720;--border:#1E2130;
-  --text:#E4E8F0;--muted:#68738A;--dim:#3A4055;
-  --crow:#5C1F2E;--crow2:#8B2E42;
-  --c1:#FF6B8A;--c2:#FF9F43;--c3:#5EC269;--c4:#4FACFE;
-  --c5:#FF7675;--c6:#A29BFE;--c7:#FDCB6E;--c8:#00CEC9;
-  --leef:#4ADE80;--veil:#FB923C;--duur:#22D3EE;
-  --soci:#60A5FA;--door:#C084FC;--econ:#FBBF24;
+  --bg:#ffffff;
+  --surface:#f7f8fb;
+  --card:#ffffff;
+  --border:#d9dee8;
+  --text:#172033;
+  --muted:#68738a;
+  --crow2:#8b2e42;
+  --green:#2f9e54;
+  --blue:#3478c7;
+  --orange:#c96b1c;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-
-/* HEADER */
-.hdr{padding:32px 48px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
-.hdr-left h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#fff}
-.hdr-left p{font-size:12px;color:var(--muted);margin-top:4px}
-.hdr-pills{display:flex;gap:10px;flex-wrap:wrap}
-.pill{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
-.pill strong{font-family:'Syne',sans-serif;font-size:16px;color:#fff}
-
-/* TABS */
-.tabs{display:flex;padding:0 48px;background:var(--surface);border-bottom:1px solid var(--border);gap:2px;overflow-x:auto}
-.tab{padding:14px 20px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;letter-spacing:0.04em;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:.2s;text-transform:uppercase}
-.tab:hover{color:var(--text)}
-.tab.on{color:#fff;border-bottom-color:var(--crow2)}
-
-/* VIEWS */
-.view{display:none;padding:40px 48px 80px}
-.view.on{display:block}
-
-.view-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-0.02em}
-.view-sub{font-size:13px;color:var(--muted);margin-bottom:36px;max-width:640px;line-height:1.7}
-
-/* ═══ CHORD VIEW ═══ */
-.chord-wrap{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
-.chord-main{flex:0 0 auto}
-#chordSvg{cursor:default}
-.chord-legend{flex:1;min-width:240px;max-width:360px}
-.leg-section{margin-bottom:28px}
-.leg-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px}
-.leg-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
-.leg-item:hover{background:var(--card);padding-left:8px;border-radius:4px}
-.leg-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.leg-name{font-size:12px;color:var(--text);flex:1}
-.leg-num{font-size:11px;font-weight:600;color:var(--muted);font-family:'Syne',sans-serif}
-.chord-tooltip{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;pointer-events:none;opacity:0;transition:.15s;z-index:999;max-width:240px;line-height:1.6}
-.chord-tooltip strong{display:block;font-size:13px;color:#fff;margin-bottom:4px;font-family:'Syne',sans-serif}
-
-/* ═══ HEATMAP VIEW ═══ */
-.heat-container{overflow-x:auto}
-.heat-table{border-collapse:collapse;min-width:700px}
-.heat-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:8px 12px;text-align:left;white-space:nowrap}
-.heat-table .col-header{font-size:9px;padding:6px 8px;text-align:center;max-width:90px;white-space:normal;line-height:1.3;vertical-align:bottom}
-.heat-table .row-header{font-size:12px;color:var(--text);padding:8px 16px 8px 0;white-space:nowrap;font-weight:500}
-.heat-cell{width:72px;height:52px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:.2s;position:relative;vertical-align:middle}
-.heat-cell:hover{transform:scale(1.05);z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.5)}
-.heat-cell span{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
-.heat-legend{display:flex;align-items:center;gap:12px;margin-top:20px;font-size:11px;color:var(--muted)}
-.heat-grad{width:160px;height:10px;border-radius:5px;background:linear-gradient(to right,var(--card),var(--crow2))}
-.cluster-header-tag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
-
-/* ═══ DOELGROEPEN VIEW ═══ */
-.doel-matrix{display:grid;grid-template-columns:180px 1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:8px;overflow:hidden}
-.dm-header{background:var(--surface);padding:14px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted)}
+html,body{
+  background:#ffffff !important;
+  color:var(--text);
+  min-height:100vh;
+  font-family:'Inter',Arial,sans-serif;
+  overflow-x:hidden;
+}
+body{padding:40px 48px 80px}
+.view-title{
+  font-family:'Syne',Arial,sans-serif;
+  font-size:24px;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:6px;
+  letter-spacing:-0.02em;
+}
+.view-sub{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:36px;
+  max-width:720px;
+  line-height:1.7;
+}
+.doel-matrix{
+  display:grid;
+  grid-template-columns:180px 1fr 1fr 1fr;
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(23,32,51,.08);
+}
+.dm-header{
+  background:var(--surface);
+  padding:14px 16px;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--muted);
+}
 .dm-header.status-head{text-align:center}
-.dm-row-label{background:var(--card);padding:12px 16px;font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center}
-.dm-cell{background:var(--card);padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-height:60px}
-.dm-bubble{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 6px;font-size:11px;line-height:1.3;cursor:default;transition:.15s}
-.dm-bubble:hover{border-color:var(--crow2);background:var(--card)}
+.dm-row-label{
+  background:#ffffff;
+  padding:12px 16px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+}
+.dm-cell{
+  background:#ffffff;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-height:60px;
+}
+.dm-bubble{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:4px 10px 4px 6px;
+  font-size:11px;
+  line-height:1.3;
+  cursor:default;
+  transition:.15s;
+  color:var(--text);
+}
+.dm-bubble:hover{border-color:var(--crow2);background:#fafbfd}
 .dm-bubble-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.st-Toegang{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.3)}
-.st-Toegang .dm-bubble-dot{background:#4ADE80}
-.st-Prioriteit{background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.3)}
-.st-Prioriteit .dm-bubble-dot{background:#60A5FA}
-.st-Weren{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.3)}
-.st-Weren .dm-bubble-dot{background:#FB923C}
-
-/* ═══ WAAIER VIEW ═══ */
-.waaier-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.waaier-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:.2s;cursor:default}
-.waaier-card:hover{border-color:var(--dim);box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(-2px)}
-.wc-bar{height:3px}
-.wc-body{padding:22px 24px}
-.wc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.wc-num{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;line-height:1;opacity:.12;color:#fff}
-.wc-niveau{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 10px;border-radius:20px}
-.niv-S{background:rgba(162,155,254,.2);color:#A29BFE}
-.niv-T{background:rgba(79,172,254,.2);color:#4FACFE}
-.niv-O{background:rgba(94,194,105,.2);color:#5EC269}
-.wc-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:10px}
-.wc-reason{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px}
-.wc-tension{background:rgba(255,255,255,.04);border-left:2px solid var(--crow2);padding:8px 12px;font-size:11px;color:var(--muted);line-height:1.6;border-radius:0 4px 4px 0}
-.wc-gebieden{margin-top:12px;font-size:11px;color:var(--dim)}
-
-/* Tooltip */
-.tt{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11.5px;pointer-events:none;opacity:0;transition:.1s;z-index:999;max-width:220px;line-height:1.6;color:var(--text)}
+.st-Toegang{background:rgba(74,222,128,.18);border-color:rgba(47,158,84,.35)}
+.st-Toegang .dm-bubble-dot{background:#2f9e54}
+.st-Prioriteit{background:rgba(96,165,250,.16);border-color:rgba(52,120,199,.35)}
+.st-Prioriteit .dm-bubble-dot{background:#3478c7}
+.st-Weren{background:rgba(251,146,60,.17);border-color:rgba(201,107,28,.35)}
+.st-Weren .dm-bubble-dot{background:#c96b1c}
+@media(max-width:900px){
+  body{padding:28px 20px 60px}
+  .doel-matrix{display:block;background:#ffffff;border:0;box-shadow:none}
+  .dm-header{display:none}
+  .dm-row-label{margin-top:14px;border:1px solid var(--border);border-radius:8px 8px 0 0;background:var(--surface)}
+  .dm-cell{border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:44px}
+  .dm-cell:before{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:2px}
+  .dm-cell:nth-of-type(4n+2):before{content:'Toegang';color:#2f9e54}
+  .dm-cell:nth-of-type(4n+3):before{content:'Prioriteit';color:#3478c7}
+  .dm-cell:nth-of-type(4n+4):before{content:'Weren / Doseren';color:#c96b1c}
+}
 </style>
 </head>
 <body>
-
-<div class="hdr">
-  <div class="hdr-left">
-    <h1>Selectieve Toegang & Doseren — Maatschappelijke Behoeften</h1>
-    <p>CROW Kennisplatform · Analyse beleidsdocumenten 15 Nederlandse gemeenten · April 2026</p>
-  </div>
-  <div class="hdr-pills">
-    <div class="pill"><strong>257</strong> behoeften</div>
-    <div class="pill"><strong>15</strong> gemeenten</div>
-    <div class="pill"><strong>8</strong> clusters</div>
-    <div class="pill"><strong>4</strong> outliers</div>
-  </div>
-</div>
-
-<div class="tabs">
-  <button class="tab on" onclick="switchTab('chord',this)">① Chord — type × cluster</button>
-  <button class="tab" onclick="switchTab('heat',this)">② Matrix — gemeente × cluster</button>
-  <button class="tab" onclick="switchTab('doel',this)">③ Doelgroepen</button>
-  <button class="tab" onclick="switchTab('waaier',this)">④ Functionele Waaier</button>
-</div>
-
-<!-- ══════════════════════ CHORD ══════════════════════ -->
-<div id="view-chord" class="view on">
-  <div class="view-title">Type behoefte ↔ Behoeftecluster</div>
-  <div class="view-sub">Chorddiagram: welke typen maatschappelijke behoefte liggen ten grondslag aan welke behoefteclusters? Breedte van de chord = aantal behoeften. Hover of klik een type of cluster om te filteren.</div>
-  <div class="chord-wrap">
-    <div class="chord-main">
-      <svg id="chordSvg" width="580" height="580"></svg>
-    </div>
-    <div class="chord-legend">
-      <div class="leg-section">
-        <div class="leg-title">Type behoefte</div>
-        <div id="typeLegend"></div>
-      </div>
-      <div class="leg-section">
-        <div class="leg-title">Behoeftecluster (shortlist)</div>
-        <div id="clusterLegend"></div>
-      </div>
-    </div>
-  </div>
-  <div class="chord-tooltip" id="chordTT"></div>
-</div>
-
-<!-- ══════════════════════ HEATMAP ══════════════════════ -->
-<div id="view-heat" class="view">
-  <div class="view-title">Gemeente × Behoeftecluster</div>
-  <div class="view-sub">Hoeveel strategische behoeften draagt elke gemeente bij aan elk cluster? Kleurintensiteit = aantal behoeften. Hover voor exact aantal.</div>
-  <div class="heat-container">
-    <table class="heat-table" id="heatTable"></table>
-  </div>
-  <div class="heat-legend">
-    <span>0</span>
-    <div class="heat-grad"></div>
-    <span>veel</span>
-    <span style="margin-left:20px;color:var(--dim)">G4 steden hebben de meeste bijdragen</span>
-  </div>
-</div>
-
-<!-- ══════════════════════ DOELGROEPEN ══════════════════════ -->
-<div id="view-doel" class="view">
-  <div class="view-title">Doelgroepen — wie krijgt toegang, wie wordt geweerd?</div>
-  <div class="view-sub">Matrix van gebruikersrollen per gebiedstype en status. Groen = toegang, blauw = prioriteit, oranje = weren/doseren.</div>
-  <div class="doel-matrix" id="doelMatrix"></div>
-</div>
-
-<!-- ══════════════════════ WAAIER ══════════════════════ -->
-<div id="view-waaier" class="view">
-  <div class="view-title">Functionele Waaier — 8 gedeelde behoefteclusters</div>
-  <div class="view-sub">De geconsolideerde shortlist: 8 clusters die de gedeelde maatschappelijke rechtvaardiging voor selectieve toegang vertegenwoordigen, op strategisch, tactisch of operationeel niveau.</div>
-  <div class="waaier-wrap" id="waaierWrap"></div>
-</div>
-
-<div class="tt" id="globalTT"></div>
+  <main>
+     <div class="doel-matrix" id="doelMatrix"></div>
+  </main>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════════
-const TYPES = [
-  {name:'Leefbaarheid',      total:38, color:'#4ADE80'},
-  {name:'Veiligheid',        total:41, color:'#FB923C'},
-  {name:'Duurzaamheid',      total:17, color:'#22D3EE'},
-  {name:'Sociaal-Maatschappelijk', total:25, color:'#60A5FA'},
-  {name:'Doorstroming',      total:11, color:'#C084FC'},
-  {name:'Economie',          total:3,  color:'#FBBF24'},
-];
-const CLUSTERS = [
-  {name:'Inclusieve Nabijheid & Zorg',           short:'C1', total:23, color:'#FF6B8A', niveau:'T'},
-  {name:'Prioritering Nood- & Hulpdiensten',     short:'C2', total:10, color:'#FF9F43', niveau:'O'},
-  {name:'Weren Sluip- & Wijkvreemd Verkeer',     short:'C3', total:28, color:'#5EC269', niveau:'T'},
-  {name:'Veiligheid Kwetsbare Verkeersdeelnemers',short:'C4',total:20, color:'#4FACFE', niveau:'T'},
-  {name:'Emissievrije & Gebundelde Stadslogistiek',short:'C5',total:26,color:'#FF7675', niveau:'S'},
-  {name:'Bescherming Kwetsbare Natuurgebieden',  short:'C6', total:12, color:'#A29BFE', niveau:'S'},
-  {name:'Fysiek Erfgoed & Infrastructuurbescherming',short:'C7',total:7,color:'#FDCB6E',niveau:'T'},
-  {name:'Beheersen Toerisme, Reuring & Evenementen',short:'C8',total:10,color:'#00CEC9',niveau:'T'},
-];
-// rows = types, cols = clusters
-const MATRIX = [
-  [0, 0,19, 2, 9, 1, 1, 6],
-  [0, 8, 5,17, 4, 1, 4, 2],
-  [0, 0, 0, 0, 8, 9, 0, 0],
-  [23,0, 0, 1, 0, 0, 0, 1],
-  [0, 2, 3, 0, 3, 1, 1, 1],
-  [0, 0, 0, 0, 2, 0, 1, 0],
-];
-const GEMS = ['Amsterdam','Apeldoorn','Almere','Delft','Den Haag','Ermelo','Groningen','Helmond','Maashorst','Rotterdam','Steenwijkerland','Tiel','Tilburg','Utrecht','Venray'];
-const HEAT = [
-  [4,4,2,2,1,1,2,1], // Amsterdam
-  [3,0,4,0,3,3,1,0], // Apeldoorn
-  [0,0,0,0,0,1,0,0], // Almere
-  [0,2,3,1,1,1,0,1], // Delft
-  [2,2,5,5,3,1,1,3], // Den Haag
-  [1,0,2,1,0,1,0,0], // Ermelo
-  [1,1,3,1,3,1,0,1], // Groningen
-  [1,0,1,1,2,0,0,1], // Helmond
-  [1,0,2,2,1,1,1,1], // Maashorst
-  [2,1,2,3,3,1,1,1], // Rotterdam
-  [1,0,2,0,1,1,0,1], // Steenwijkerland
-  [1,0,1,2,1,1,1,1], // Tiel
-  [1,0,2,1,2,1,0,1], // Tilburg
-  [2,0,1,0,2,0,0,1], // Utrecht
-  [0,0,1,0,1,1,0,0], // Venray
-];
 const DOEL = [
   {g:'Amsterdam', gb:'Autoluwe zones',        rol:'Kwetsbare personen / WMO', s:'Toegang',   m:'Kwetsbaarheid wordt vergroot zonder auto'},
   {g:'Amsterdam', gb:'Autoluwe zones',        rol:'Doorgaand autoverkeer',    s:'Weren',     m:'Lokale buurtwegen zwaar belast door sluipverkeer'},
@@ -254,333 +145,8 @@ const DOEL = [
   {g:'Utrecht',   gb:'Kwetsbaar erfgoed',     rol:'Zwaar vrachtverkeer >7.5t',s:'Weren',    m:'Gevaar voor middeleeuwse werfkelders'},
   {g:'Utrecht',   gb:'Centrum',               rol:'Zware bouw- / verhuisvoertuigen',s:'Toegang',m:'Essentiële stadsfuncties garanderen'},
 ];
-const CLUSTERS_FULL = [
-  {naam:'1. Inclusieve Nabijheid & Zorg', niveau:'Tactisch',
-   rechtvaardiging:'Voorkomen van vervoersarmoede, participatie van mindervaliden borgen en toegankelijkheid garanderen voor medische (thuis)zorg en mantelzorgers.',
-   gebiedstypen:'Autoluwe binnensteden, voetgangerszones, woonwijken en zorghubs.',
-   spanningsveld:'Autoluwe/emissievrije beleidsambities versus de harde afhankelijkheid van gemotoriseerd vervoer door kwetsbare doelgroepen.'},
-  {naam:'2. Prioritering Nood- & Hulpdiensten', niveau:'Operationeel',
-   rechtvaardiging:'Garanderen van wettelijke aanrijdtijden ter bescherming van de veiligheid van inwoners door altijd een vrije doorgang voor nooddiensten.',
-   gebiedstypen:'Binnensteden, afgesloten straten, 30 km/u-zones.',
-   spanningsveld:'Autoluwe rust en ruimtelijke barrières versus de absolute noodzaak voor snelle en calamiteitendoorgang.'},
-  {naam:'3. Weren Sluip- & Wijkvreemd Verkeer', niveau:'Tactisch',
-   rechtvaardiging:'Beschermen van de directe leefomgeving van aanwonenden door interwijk-, forenzen-, sluip- en zoekverkeer te leiden via randwegen.',
-   gebiedstypen:'Erftoegangswegen, naoorlogse en bestaande woonwijken.',
-   spanningsveld:'Efficiënte routes voor regionaal autoverkeer versus lokale verkeersveiligheid en leefbaarheid voor bewoners.'},
-  {naam:'4. Veiligheid Kwetsbare Verkeersdeelnemers', niveau:'Tactisch',
-   rechtvaardiging:'Het fysiek scheiden van grote metalen voertuigen en jonge/langzame verkeersdeelnemers om de verkeersveiligheid structureel te verbeteren.',
-   gebiedstypen:'Schoolstraten, onderwijsclusters.',
-   spanningsveld:'Gemak en tijdsbesparing voor (haal- en breng)ouders versus kwetsbaarheid van fietsende of lopende kinderen.'},
-  {naam:'5. Emissievrije & Gebundelde Stadslogistiek', niveau:'Strategisch',
-   rechtvaardiging:'Terugdringen van luchtvervuiling (NOx, PM10) en CO₂, behalen van klimaatdoelstellingen en vergroten van de gezondheid van een gezonde leefomgeving.',
-   gebiedstypen:'Binnensteden, Zero-emissiezone Centrum.',
-   spanningsveld:'Noodzakelijke logistieke efficiëntie (bedrijven) versus verblijfskwaliteit en gezondheid (bewoners/bezoekers).'},
-  {naam:'6. Bescherming Kwetsbare Natuurgebieden', niveau:'Strategisch',
-   rechtvaardiging:'Beschermen van de biodiversiteit, stikstofreductie en het borgen van recreatieve rust in ecologische hoofdstructuren.',
-   gebiedstypen:'Bossen, heide, duinen (Natura 2000), groen-blauwe randen.',
-   spanningsveld:'Recreatiedruk en mobiliteitsbehoeften van dagtoeristen versus de natuurlijke rust en kwetsbare flora/fauna.'},
-  {naam:'7. Fysiek Erfgoed & Infrastructuurbescherming', niveau:'Tactisch',
-   rechtvaardiging:'Voorkomen van het feitelijk inzakken van middeleeuwse werfkelders, walmuren en oude bruggen door strikte en direct afdwingbare aslastlimieten.',
-   gebiedstypen:'Stadsentra, nieuwbouwlocaties, oude kades.',
-   spanningsveld:'Operationele doorlooptijden van projectontwikkelaars en aannemers versus veiligheid in smalle straatprofielen.'},
-  {naam:'8. Beheersen Toerisme, Reuring & Evenementen', niveau:'Tactisch',
-   rechtvaardiging:'Buiten bezoekerstijden horecapleinen en toeristische locaties bevoorraden, om een veilige grens tussen bevoorrading en verblijf te borgen.',
-   gebiedstypen:'Smalle winkelstraten, horecapleinen.',
-   spanningsveld:'Doorstroming en punctualiteit van logistieke keten- en ritplanning van transporteurs versus het piekmoment van ontspanning en beleving door bezoekers.'},
-];
 
-// ═══════════════════════════════════════════════════════
-// TAB SWITCHING
-// ═══════════════════════════════════════════════════════
-function switchTab(id, btn) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('view-'+id).classList.add('on');
-  btn.classList.add('on');
-}
-
-// ═══════════════════════════════════════════════════════
-// CHORD DIAGRAM
-// ═══════════════════════════════════════════════════════
 (function(){
-  const W=580,H=580,cx=W/2,cy=H/2;
-  const R=220, Ri=180, Rl=238;
-  const PAD=0.018, GAP=0.14;
-
-  const svg = document.getElementById('chordSvg');
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-
-  // Calculate total per type and cluster
-  const srcTotals = TYPES.map((_,i)=>MATRIX[i].reduce((a,b)=>a+b,0));
-  const tgtTotals = CLUSTERS.map((_,j)=>MATRIX.reduce((s,row)=>s+row[j],0));
-  const grand = srcTotals.reduce((a,b)=>a+b,0) + tgtTotals.reduce((a,b)=>a+b,0);
-
-  const nNodes = TYPES.length + CLUSTERS.length;
-  const avail = 2*Math.PI - 2*GAP - nNodes*PAD;
-  const scale = avail / grand;
-
-  // Types: top-left to top-right (angles around -π/2 going from... let's do:
-  // Types: from -π+GAP/2 going clockwise
-  // Clusters: from -GAP/2 going clockwise (so separated by GAP)
-  
-  let a = -Math.PI + GAP/2;
-  const srcNodes = TYPES.map((t,i)=>{
-    const span = srcTotals[i]*scale;
-    const node = {idx:i, startAngle:a, endAngle:a+span, ...t, total:srcTotals[i], isType:true};
-    a += span+PAD;
-    return node;
-  });
-
-  a += GAP - PAD;
-
-  const tgtNodes = CLUSTERS.map((c,j)=>{
-    const span = tgtTotals[j]*scale;
-    const node = {idx:j, startAngle:a, endAngle:a+span, ...c, total:tgtTotals[j], isType:false};
-    a += span+PAD;
-    return node;
-  });
-
-  // Build chord paths
-  const srcSub = srcNodes.map(n=>n.startAngle);
-  const tgtSub = tgtNodes.map(n=>n.startAngle);
-  const chords = [];
-
-  for(let i=0;i<TYPES.length;i++){
-    if(!srcTotals[i]) continue;
-    for(let j=0;j<CLUSTERS.length;j++){
-      const val = MATRIX[i][j];
-      if(!val) continue;
-      const srcSpan = (val/srcTotals[i])*(srcNodes[i].endAngle-srcNodes[i].startAngle);
-      const tgtSpan = (val/tgtTotals[j])*(tgtNodes[j].endAngle-tgtNodes[j].startAngle);
-      chords.push({
-        src:{s:srcSub[i], e:srcSub[i]+srcSpan, node:srcNodes[i]},
-        tgt:{s:tgtSub[j], e:tgtSub[j]+tgtSpan, node:tgtNodes[j]},
-        val, ti:i, ci:j,
-      });
-      srcSub[i]+=srcSpan;
-      tgtSub[j]+=tgtSpan;
-    }
-  }
-
-  function pt(r,a){return [cx+r*Math.cos(a), cy+r*Math.sin(a)];}
-  function largeArc(s,e){return Math.abs(e-s)>Math.PI?1:0;}
-
-  function arcPath(r,s,e){
-    const [x1,y1]=pt(r,s),[x2,y2]=pt(r,e);
-    return `M${x1},${y1} A${r},${r},0,${largeArc(s,e)},1,${x2},${y2}`;
-  }
-
-  function donutPath(s,e){
-    const [x1o,y1o]=pt(R,s),[x2o,y2o]=pt(R,e);
-    const [x2i,y2i]=pt(Ri,e),[x1i,y1i]=pt(Ri,s);
-    const la=largeArc(s,e);
-    return `M${x1o},${y1o} A${R},${R},0,${la},1,${x2o},${y2o} L${x2i},${y2i} A${Ri},${Ri},0,${la},0,${x1i},${y1i}Z`;
-  }
-
-  function ribbonPath(c){
-    const {src,tgt}=c;
-    const [x1,y1]=pt(Ri,src.s),[x2,y2]=pt(Ri,src.e);
-    const [x3,y3]=pt(Ri,tgt.e),[x4,y4]=pt(Ri,tgt.s);
-    const la1=largeArc(src.s,src.e), la2=largeArc(tgt.s,tgt.e);
-    return `M${x1},${y1} A${Ri},${Ri},0,${la1},1,${x2},${y2} Q${cx},${cy},${x3},${y3} A${Ri},${Ri},0,${la2},0,${x4},${y4} Q${cx},${cy},${x1},${y1}Z`;
-  }
-
-  const tt = document.getElementById('chordTT');
-  let active = null;
-
-  function highlightChords(check){
-    document.querySelectorAll('.chord-ribbon').forEach(el=>{
-      const ti=+el.dataset.ti, ci=+el.dataset.ci;
-      el.style.opacity = check(ti,ci) ? '0.75' : '0.07';
-    });
-    document.querySelectorAll('.chord-arc').forEach(el=>{
-      const isType = el.dataset.type==='type';
-      const idx=+el.dataset.idx;
-      el.style.opacity = check(isType?idx:-1, isType?-1:idx) ? '1' : '0.3';
-    });
-  }
-
-  function resetHighlight(){
-    document.querySelectorAll('.chord-ribbon').forEach(el=>el.style.opacity='0.55');
-    document.querySelectorAll('.chord-arc').forEach(el=>el.style.opacity='1');
-  }
-
-  // Create SVG elements
-  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-  svg.appendChild(defs);
-
-  // Ribbons (behind arcs)
-  const ribbonGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
-  svg.appendChild(ribbonGroup);
-
-  chords.forEach(c=>{
-    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d', ribbonPath(c));
-    path.setAttribute('fill', TYPES[c.ti].color);
-    path.setAttribute('opacity','0.55');
-    path.setAttribute('class','chord-ribbon');
-    path.dataset.ti = c.ti;
-    path.dataset.ci = c.ci;
-    path.style.transition = 'opacity 0.2s';
-    path.addEventListener('mouseenter', e=>{
-      highlightChords((ti,ci)=>ti===c.ti||ci===c.ci);
-      tt.innerHTML=`<strong>${TYPES[c.ti].name} → ${CLUSTERS[c.ci].name}</strong>${c.val} behoeften`;
-      tt.style.opacity='1';
-    });
-    path.addEventListener('mousemove', e=>{
-      tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY-40)+'px';
-    });
-    path.addEventListener('mouseleave', ()=>{ resetHighlight(); tt.style.opacity='0'; });
-    ribbonGroup.appendChild(path);
-  });
-
-  // Arcs
-  const arcGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
-  svg.appendChild(arcGroup);
-
-  function addArc(node, dtype){
-    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('class','chord-arc-group');
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d', donutPath(node.startAngle, node.endAngle));
-    path.setAttribute('fill', node.color);
-    path.setAttribute('class','chord-arc');
-    path.setAttribute('data-type', dtype);
-    path.setAttribute('data-idx', node.idx);
-    path.style.cursor='pointer';
-    path.style.transition='opacity 0.2s';
-
-    path.addEventListener('mouseenter', e=>{
-      if(dtype==='type') highlightChords((ti,_)=>ti===node.idx);
-      else highlightChords((_,ci)=>ci===node.idx);
-      tt.innerHTML=`<strong>${node.name}</strong>${node.total} behoeften`;
-      tt.style.opacity='1';
-    });
-    path.addEventListener('mousemove', e=>{
-      tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY-40)+'px';
-    });
-    path.addEventListener('mouseleave', ()=>{ resetHighlight(); tt.style.opacity='0'; });
-    g.appendChild(path);
-
-    // Label
-    const mid = (node.startAngle+node.endAngle)/2;
-    const span = node.endAngle - node.startAngle;
-    if(span > 0.06){
-      const lr = R+16;
-      const [lx,ly] = pt(lr, mid);
-      const rot = (mid*180/Math.PI)+90;
-      const flip = mid > Math.PI/2 && mid < 3*Math.PI/2;
-      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-      text.setAttribute('x', lx); text.setAttribute('y', ly);
-      text.setAttribute('text-anchor', flip?'end':'start');
-      text.setAttribute('transform', `rotate(${flip?rot+180:rot},${lx},${ly})`);
-      text.setAttribute('fill', node.color);
-      text.setAttribute('font-size', dtype==='type'?'11':'9.5');
-      text.setAttribute('font-family', 'Syne,sans-serif');
-      text.setAttribute('font-weight', '600');
-      text.setAttribute('pointer-events','none');
-      const label = dtype==='type' ? node.name : node.name.replace('& ','&\n').split(' ').slice(0,3).join(' ');
-      text.textContent = label;
-      g.appendChild(text);
-    }
-
-    arcGroup.appendChild(g);
-  }
-
-  srcNodes.forEach(n=>addArc(n,'type'));
-  tgtNodes.forEach(n=>addArc(n,'cluster'));
-
-  // Center label
-  const centerText = document.createElementNS('http://www.w3.org/2000/svg','text');
-  centerText.setAttribute('x', cx); centerText.setAttribute('y', cy-6);
-  centerText.setAttribute('text-anchor','middle');
-  centerText.setAttribute('fill','#fff');
-  centerText.setAttribute('font-size','28');
-  centerText.setAttribute('font-family','Syne,sans-serif');
-  centerText.setAttribute('font-weight','800');
-  centerText.textContent='257';
-  svg.appendChild(centerText);
-  const centerSub = document.createElementNS('http://www.w3.org/2000/svg','text');
-  centerSub.setAttribute('x',cx); centerSub.setAttribute('y',cy+14);
-  centerSub.setAttribute('text-anchor','middle');
-  centerSub.setAttribute('fill','#68738A');
-  centerSub.setAttribute('font-size','10');
-  centerSub.setAttribute('font-family','Syne,sans-serif');
-  centerSub.setAttribute('letter-spacing','0.1em');
-  centerSub.textContent='BEHOEFTEN';
-  svg.appendChild(centerSub);
-
-  // Legend
-  const typeLeg = document.getElementById('typeLegend');
-  TYPES.forEach((t,i)=>{
-    const div=document.createElement('div');
-    div.className='leg-item';
-    div.innerHTML=`<div class="leg-dot" style="background:${t.color}"></div><div class="leg-name">${t.name}</div><div class="leg-num">${t.total}</div>`;
-    div.addEventListener('mouseenter',()=>highlightChords((ti,_)=>ti===i));
-    div.addEventListener('mouseleave',()=>resetHighlight());
-    typeLeg.appendChild(div);
-  });
-  const clLeg = document.getElementById('clusterLegend');
-  CLUSTERS.forEach((c,j)=>{
-    const div=document.createElement('div');
-    div.className='leg-item';
-    div.innerHTML=`<div class="leg-dot" style="background:${c.color}"></div><div class="leg-name">${c.name}</div><div class="leg-num">${c.total}</div>`;
-    div.addEventListener('mouseenter',()=>highlightChords((_,ci)=>ci===j));
-    div.addEventListener('mouseleave',()=>resetHighlight());
-    clLeg.appendChild(div);
-  });
-})();
-
-// ═══════════════════════════════════════════════════════
-// HEATMAP
-// ═══════════════════════════════════════════════════════
-(function(){
-  const maxVal = Math.max(...HEAT.flat());
-  const tt = document.getElementById('globalTT');
-
-  function cellColor(v){
-    if(!v) return '#0E1018';
-    const t = v/maxVal;
-    const r=Math.round(92+t*(180-92));
-    const g=Math.round(31+t*(31-31));
-    const b=Math.round(46+t*(46-46));
-    const alpha = 0.15 + t*0.85;
-    return `rgba(${Math.round(92+t*100)},${Math.round(31)},${Math.round(46+t*20)},${alpha})`;
-  }
-
-  const table = document.getElementById('heatTable');
-  let html='<thead><tr><th></th>';
-  CLUSTERS.forEach(c=>html+=`<th class="col-header"><span class="cluster-header-tag" style="background:${c.color}"></span>${c.name.split(' ').slice(0,3).join(' ')}</th>`);
-  html+='</tr></thead><tbody>';
-  GEMS.forEach((g,gi)=>{
-    html+=`<tr><td class="row-header">${g}</td>`;
-    HEAT[gi].forEach((v,ci)=>{
-      const bg=cellColor(v);
-      const textColor = v>=3 ? '#fff' : (v>0?'rgba(255,255,255,0.7)':'var(--dim)');
-      html+=`<td class="heat-cell" style="background:${bg}" 
-        data-g="${g}" data-c="${CLUSTERS[ci].name}" data-v="${v}"
-        onmouseenter="showHeatTT(event,this)" onmouseleave="hideHeatTT()">
-        <span style="color:${textColor}">${v||''}</span></td>`;
-    });
-    html+='</tr>';
-  });
-  html+='</tbody>';
-  table.innerHTML=html;
-})();
-
-function showHeatTT(e,el){
-  const tt=document.getElementById('globalTT');
-  tt.innerHTML=`<strong>${el.dataset.g}</strong>${el.dataset.c}<br><span style="color:#4ADE80;font-family:Syne;font-weight:700;font-size:16px">${el.dataset.v||0}</span> strategische behoeften`;
-  tt.style.opacity='1'; tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY-60)+'px';
-}
-function hideHeatTT(){document.getElementById('globalTT').style.opacity='0';}
-
-// ═══════════════════════════════════════════════════════
-// DOELGROEPEN MATRIX
-// ═══════════════════════════════════════════════════════
-(function(){
-  // Get unique gebiedstypen
   const gbMap = {};
   DOEL.forEach(d=>{
     if(!gbMap[d.gb]) gbMap[d.gb]={Toegang:[],Prioriteit:[],Weren:[]};
@@ -589,50 +155,25 @@ function hideHeatTT(){document.getElementById('globalTT').style.opacity='0';}
   });
 
   const mat = document.getElementById('doelMatrix');
-  let html=`<div class="dm-header">Gebiedstype</div>
-    <div class="dm-header status-head" style="color:#4ADE80">▲ Toegang</div>
-    <div class="dm-header status-head" style="color:#60A5FA">● Prioriteit</div>
-    <div class="dm-header status-head" style="color:#FB923C">▼ Weren / Doseren</div>`;
+  let html = `<div class="dm-header">Gebiedstype</div>
+    <div class="dm-header status-head" style="color:#2f9e54">▲ Toegang</div>
+    <div class="dm-header status-head" style="color:#3478c7">● Prioriteit</div>
+    <div class="dm-header status-head" style="color:#c96b1c">▼ Weren / Doseren</div>`;
 
   Object.entries(gbMap).forEach(([gb, statuses])=>{
-    html+=`<div class="dm-row-label">${gb}</div>`;
+    html += `<div class="dm-row-label">${gb}</div>`;
     ['Toegang','Prioriteit','Weren'].forEach(s=>{
-      html+=`<div class="dm-cell">`;
-      (statuses[s]||[]).forEach(d=>{
-        html+=`<div class="dm-bubble st-${s}" title="${d.m}">
+      html += `<div class="dm-cell">`;
+      (statuses[s] || []).forEach(d=>{
+        html += `<div class="dm-bubble st-${s}" title="${d.m}">
           <div class="dm-bubble-dot"></div>
           <span>${d.rol}</span>
         </div>`;
       });
-      html+=`</div>`;
+      html += `</div>`;
     });
   });
-  mat.innerHTML=html;
-})();
-
-// ═══════════════════════════════════════════════════════
-// WAAIER
-// ═══════════════════════════════════════════════════════
-(function(){
-  const wrap = document.getElementById('waaierWrap');
-  const colMap={'Strategisch':'S','Tactisch':'T','Operationeel':'O'};
-  wrap.innerHTML = CLUSTERS_FULL.map((c,i)=>{
-    const color = CLUSTERS[i].color;
-    const niv = colMap[c.niveau]||'T';
-    return `<div class="waaier-card">
-      <div class="wc-bar" style="background:${color}"></div>
-      <div class="wc-body">
-        <div class="wc-top">
-          <div class="wc-num">${i+1}</div>
-          <div class="wc-niveau niv-${niv}">${c.niveau}</div>
-        </div>
-        <div class="wc-name">${c.naam.replace(/^\d+\.\s*/,'')}</div>
-        <div class="wc-reason">${c.rechtvaardiging}</div>
-        <div class="wc-tension">${c.spanningsveld}</div>
-        <div class="wc-gebieden">📍 ${c.gebiedstypen}</div>
-      </div>
-    </div>`;
-  }).join('');
+  mat.innerHTML = html;
 })();
 </script>
 </body>
