@@ -1222,13 +1222,25 @@ function hideTT(){
   const W = 1180;
   const H = 760;
   const PAD_CLUSTER = 5;
-    const PAD_BEHOEFTE = 0.5;
-    const PAD_GEMEENTE = 5;
+  const PAD_BEHOEFTE = 0.5;
+  const PAD_GEMEENTE = 5;
   const NODE_W = 22;
 
-  const X1 = 220;
-  const X2 = 600;
-  const X3 = 980;
+  const COL_GAP = 380;
+
+    // include label buffer (THIS is what you're missing)
+    const LABEL_PAD = 50;
+
+    // real content width INCLUDING labels
+    const CONTENT_WIDTH = (COL_GAP * 2) + NODE_W + LABEL_PAD;
+
+    // safe centering
+    const OFFSET_X = Math.max(40, (W - CONTENT_WIDTH) / 2);
+
+    // apply
+    const X1 = OFFSET_X;
+    const X2 = OFFSET_X + COL_GAP;
+    const X3 = OFFSET_X + COL_GAP * 2;
 
   const svg = document.getElementById('sankeySvg');
   svg.setAttribute('width', W);
@@ -1460,7 +1472,7 @@ function hideTT(){
         text.setAttribute('pointer-events', 'none');
 
         const label = labelFn(n.name);
-        text.textContent = truncate(label, maxLength);
+        text.textContent = label;
 
         svg.appendChild(text);
       }
