@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sankey — Cluster naar Behoeften naar Gemeente</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#FFFFFF;
+  --paper:#FFFFFF;
+  --ink:#1C1916;
+  --muted:#6B6560;
+  --border:#FFFFFF;
+  --dim:#C8C3BE;
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:#FFFFFF;
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.6;
+  padding:0;
+}
+
+.sankey-card{
+  background:#FFFFFF;
+  border:none;
+  box-shadow:none;
+  padding:0;
+}
+
+.sankey-wrap{
+  overflow-x:auto;
+  background:#FFFFFF;
+}
+
+#sankeySvg{
+  font-family:'DM Sans',sans-serif;
+  background:#FFFFFF;
+  display:block;
+}
+
+.tt{
+  position:fixed;
+  background:var(--ink);
+  color:#FFFFFF;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:12px;
+  pointer-events:none;
+  opacity:0;
+  transition:.1s;
+  z-index:999;
+  max-width:300px;
+  line-height:1.6;
+}
+
+.tt strong{
+  display:block;
+  font-size:13px;
+  margin-bottom:3px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sankey-card">
+  <div class="sankey-wrap">
+    <svg id="sankeySvg"></svg>
+  </div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const CLUSTERS_DATA = [
+  {
+    "code": "C1",
+    "naam": "C1: Inclusieve Nabijheid & Zorg",
+    "n": 24,
+    "hex": "#D4365A"
+  },
+  {
+    "code": "C2",
+    "naam": "C2: Prioritering Nood- en Hulpdiensten",
+    "n": 11,
+    "hex": "#E07020"
+  },
+  {
+    "code": "C3",
+    "naam": "C3: Weren van Sluip- en Wijkvreemd Verkeer",
+    "n": 36,
+    "hex": "#2A8040"
+  },
+  {
+    "code": "C4",
+    "naam": "C4: Veiligheid Kwetsbare Verkeersdeelnemers",
+    "n": 30,
+    "hex": "#1A6DAF"
+  },
+  {
+    "code": "C5",
+    "naam": "C5: Emissievrije en Gebundelde Stadslogistiek",
+    "n": 36,
+    "hex": "#C03030"
+  },
+  {
+    "code": "C6",
+    "naam": "C6: Bescherming Kwetsbare Natuurgebieden",
+    "n": 19,
+    "hex": "#6050B0"
+  },
+  {
+    "code": "C7",
+    "naam": "C7: Fysieke Erfgoed- en Infrastructuurbescherming",
+    "n": 7,
+    "hex": "#B07020"
+  },
+  {
+    "code": "C8",
+    "naam": "C8: Beheersen van Toerisme, Reuring & Evenementen",
+    "n": 15,
+    "hex": "#10908A"
+  }
+];
+
+const SK_CLUSTER_LONG = {
+  "C1": {
+    "Autotoegang garanderen voor mindervaliden tot centrumfuncties en specifieke (zorg)voorzieningen in een autoluwe zone": 1,
+    "Fysiek vrijhouden van zones voor voetgangers en hulpmiddelen ('lopen-plus' / mindervaliden) vrij van hinderobjecten en (snor)fietsen.": 2,
+    "Fysieke toegankelijkheid in autoluwe zones borgen voor mensen met specifieke behoeften (rollator, rolstoel, slechtzienden).": 1,
+    "Fysieke toegankelijkheid tot de voordeur voor mensen met een fysieke beperking, ouderen en kinderen.": 1,
+    "Garanderen van structurele toegankelijkheid (basisbereikbaarheid) tot essentiële maatschappelijke voorzieningen zoals ziekenhuizen.": 1,
+    "Garanderen van toegankelijkheid voor WMO-doelgroepen, minder-validen en ouderen via op maat gemaakt doelgroepenvervoer en speciale voertuigen (zoals driewielers).": 1,
+    "Het garanderen van fijnmazige, directe toegang voor lokale en sociale vervoersdiensten (zoals buurtbussen, MuzeMobiel en scootmobielpools) in (autoluwe) kernen en wijken,.": 1,
+    "Het te allen tijde garanderen van toegang en directe bereikbaarheid (inclusief parkeergelegenheid) voor mindervaliden in autoluwe gebieden.": 1,
+    "Specifieke toegang en ruimte borgen voor doelgroepenvervoer (rolstoelauto's, scootmobielen, hubtaxi's) bij zorghubs en zorginstellingen.": 1,
+    "Toegang en parkeergelegenheid nabij bestemmingen behouden voor bewoners en bezoekers die om gezondheidsredenen afhankelijk zijn van de auto": 1,
+    "Toegang en parkeerruimte verlenen voor geplande ambulante (thuis)zorg en welzijnswerkers.": 1,
+    "Toegang en specifieke parkeermogelijkheden (zoals een vergunning) toewijzen aan mantelzorgers.": 1,
+    "Toegang per auto voor mantelzorgers en werknemers met nachtdiensten in de wijk.": 1,
+    "Toegang verlenen aan mantelzorgers en reguliere vrijwilligers (sociaal belang behartigende instellingen).": 1,
+    "Toegang verlenen aan touringcars met specifieke kwetsbare groepen (kinderen t/m 12, senioren) richting cultuur/educatie-bestemmingen.": 1,
+    "Toegankelijkheid van de autoluwe binnenstad waarborgen voor mindervaliden en hun voertuigen.": 1,
+    "Toegankelijkheid voor specifieke kwetsbare groepen faciliteren door integratie van doelgroepenvervoer in het reguliere stads-OV.": 1,
+    "Toegankelijkheid waarborgen voor ouderen en mindervaliden per auto in autoluwe zones": 1,
+    "Toelaten van toegang met fietsen en scootmobielen voor ouderen en minder-mobiele burgers in de voetgangerszone.": 1,
+    "Toestaan van fietsen tot in de autoluwe zones voor zorgverleners (zoals wijkverpleegkundigen).": 1,
+    "Toestaan van uitzonderingen voor direct parkeren nabij woningen in het centrum voor bewoners met bijzondere (medische) omstandigheden": 1,
+    "Tot aan de voordeur toegang verlenen voor het halen en brengen van uiterst kwetsbare personen (mensen met beperking, ouderen, speciaal leerlingenvervoer).": 1,
+    "Voorrangsrecht bieden aan gehandicapten voor parkeren op straat, ook in gebieden met voornamelijk betaald/schaars parkeren": 1
+  },
+  "C2": {
+    "Directe toegang verlenen voor acute en spoedzorg (verloskundigen en kraamzorg tijdens een bevalling).": 1,
+    "Directe toegang verlenen voor acute storingsdiensten (bijvoorbeeld wegenwacht, oplossen gaslek of stroomstoring).": 2,
+    "Garanderen van onbelemmerde doorgang voor nood- en hulpdiensten in de openbare ruimte.": 1,
+    "Gegarandeerde filevrije (dynamische) routes voor nood- en hulpdiensten.": 1,
+    "Het borgen van snelle en ongehinderde toegang voor nood- en hulpdiensten in autoluwe woonstraten en voetgangersgebieden.": 1,
+    "Nabije en directe toegang verlenen voor acute medische nood- en hulpdiensten (brandweer, ambulance, politie, orgaantransport).": 1,
+    "Onbelemmerde doorgang voor nood- en hulpdiensten in autoluwe en 30 km/u-zones.": 1,
+    "Prioriteit en ongehinderde doorgang garanderen voor nood- en hulpdiensten, specifiek bij fysieke barrières zoals spooroverwegen.": 1,
+    "Toegang bieden aan hulpdiensten en nooddiensten bij fysieke wegafsluitingen (knips)": 1,
+    "Toegang verlenen aan taxi's en specifieke hulpdiensten op vrije lijnbusbanen.": 1
+  },
+  "C3": {
+    "Beperken van de dominantie van en toegang voor doorgaand autoverkeer in de binnenstad en stationsomgeving van Steenwijk.": 2,
+    "Beperken van zwaar doorgaand vrachtverkeer door specifieke dorpskernen (Loenen).": 1,
+    "Exclusief toekennen van toegang en parkeercapaciteit in woongebieden voor lokaal bestemmingsverkeer (gerelateerd aan de woonfunctie).": 1,
+    "Het opdelen van het centrum in afgesloten verkeerscompartimenten (virtueel of fysiek) waardoor onderling doorsteken voor auto's onmogelijk wordt.": 1,
+    "Het parkeren op straat voorbehouden aan direct omwonenden, door verplaatsing van bezoekersparkeren naar garages of P+R faciliteiten aan de stadsrand.": 2,
+    "Omleiden van regionaal en stedelijk doorgaand vrachtverkeer naar robuuste randwegen buiten de stad": 2,
+    "Ontmoedigen en omleiden van doorgaand fietsverkeer (routegebruikers) rondom het centrumgebied.": 1,
+    "Regionale autobezoekers weren uit het hart van de stad en afvangen aan de randen.": 2,
+    "Tegengaan van doorgaand sluipverkeer op kleine wegen in het buitengebied.": 1,
+    "Toegang weigeren / filteren van doorgaand regionaal autoverkeer op het stedelijke wegennet; afvangen bij hubs aan de stadsrand.": 2,
+    "Toegang weigeren voor doorgaand verkeer ter bescherming van woonwijken en verblijfsgebieden.": 1,
+    "Uitsluiten van autoverkeer (bezoekers) in de binnenstad door toegang te filteren en voertuigen te sturen naar gebundelde parkeerhubs aan de randen.": 2,
+    "Uitsluiten van doorgaand (recreatief) autoverkeer in het dorp Ossenzijl door middel van een fysieke randweg.": 1,
+    "Uitsluiten van doorgaand auto- en busverkeer op specifieke promenades.": 1,
+    "Volledig weren van doorgaand autoverkeer op de Kanaaldijk Noord-West": 1,
+    "Weren van doorgaand (vracht)autoverkeer in reguliere woongebieden ten gunste van lokaal bestemmingsverkeer.": 2,
+    "Weren van doorgaand autoverkeer door en tussen woonwijken en dorpen": 1,
+    "Weren van doorgaand autoverkeer op en binnen de centrumring (verkeersaders opknippen).": 1,
+    "Weren van doorgaand autoverkeer uit het stadscentrum en woonwijken": 1,
+    "Weren van doorgaand autoverkeer uit woonwijken (erftoegangswegen) en concentreren op hoofdwegen.": 1,
+    "Weren van doorgaand en zwaar vrachtverkeer in woonstraten en door de bebouwde kom.": 1,
+    "Weren van doorgaand gemotoriseerd verkeer in het centrumgebied.": 1,
+    "Weren van doorgaand noord-zuid interwijkverkeer en sluipverkeer aan de oostzijde van het centrum (Zuidende/Stationsstraat)": 1,
+    "Weren van doorgaand sluipverkeer in woonwijken en in het kwetsbare buitengebied.": 1,
+    "Weren van niet-bestemmingsverkeer en autoluw maken van specifieke wegen (zoals de Kerkweg en Bramen).": 2,
+    "Weren van niet-lokaal en doorgaand vrachtverkeer op woon- en wijkwegen.": 1,
+    "Weren van onnodig doorgaand (vracht)autoverkeer in woon- en verblijfsgebieden (zoals de binnenstad).": 1,
+    "Weren van wijkvreemd verkeer (forenzen en bezoekers) bij straatparkeren in woonwijken": 1
+  },
+  "C4": {
+    "Autoluw en verkeersveilig inrichten van nieuwe en bestaande woonwijken met prioriteit en exclusieve routes voor langzaam verkeer.": 2,
+    "Autoverkeer actief weren of beperken in het kernwinkelgebied en op aanlooproutes via 'auto te gast' en 'shared spaces' principes.": 1,
+    "Beperken van algemeen autogebruik bij winkelcentra ten gunste van langzaam verkeer, met uitzondering van bezoekers uit verder weg gelegen gebieden.": 2,
+    "Beperken van autogebruik in schoolomgevingen door prioriteit te geven aan langzame verkeersdeelnemers (lopen/fietsen).": 2,
+    "Beperken van regulier en doorgaand (personen)autoverkeer in de stad en het maximeren op 30 km/u.": 2,
+    "Filteren van toegang in de 'shared space' van de binnenstad ten gunste van kwetsbare voetgangers en minder validen.": 2,
+    "Garanderen van toegankelijke en veilige verplaatsing voor kwetsbare leeftijdsgroepen (\"8 tot 88 jaar\").": 1,
+    "Het weren van snorfietsen en hogesnelheidsfietsen (speed pedelecs) van drukke fietspaden, met een verplichting om de rijbaan te gebruiken.": 1,
+    "Ontmoedigen van algemeen autogebruik nabij onderwijsclusters.": 1,
+    "Reguleren en uitsluiten van dominant autoverkeer rondom schoolomgevingen (zoals de Schansweg, Zuidveenseweg en Vendelweg) middels 30 km/uur-zones en autoluwe inrichting.": 2,
+    "Snelheidsrestrictie (maximaal 30 km/u) afdwingen voor alle gemotoriseerde voertuigen in woonwijken en op wijkontsluitingswegen": 2,
+    "Tijdelijk weren van gemotoriseerd (haal- en breng)verkeer direct voor scholen (venstertijden / schoolstraat).": 1,
+    "Tijdelijk weren van inrijdend gemotoriseerd verkeer (halende en brengende ouders) rondom scholen": 2,
+    "Tijdsgebonden weren van al het gemotoriseerde verkeer rondom scholen gedurende haal- en brengtijden (autovrije schoolomgevingen).": 2,
+    "Tijdsgebonden weren van fietsers in voetgangersgebieden (tussen 11:00 en 18:00/21:00 uur).": 2,
+    "Toegang tijdelijk blokkeren voor al het gemotoriseerde verkeer rondom scholen (inrichten van zogeheten schoolstraten).": 1,
+    "Weren en strenger reguleren van logistieke maaltijdbezorgers op fietsen en gemotoriseerde tweewielers in het centrum.": 1,
+    "Weren of scheiden van snelle voertuigen van fietsroutes (grote snelheidsverschillen reguleren).": 1,
+    "Weren van gemotoriseerd verkeer, bromfietsen, scooters en (opgevoerde) fatbikes binnen het gehele voetgangersgebied.": 1,
+    "Weren van overmatig (snel) autoverkeer in de directe omgeving van scholen.": 1
+  },
+  "C5": {
+    "Beheersen van inrijdend verkeer van bouwlogistiek, service-, montage- en storingsdiensten in de binnenstad": 1,
+    "Beheersen van toegangstijden voor logistiek verkeer in de binnenstad (vergroten venstertijdengebied)": 1,
+    "Beperken van fysieke toegang voor zwaar vrachtverkeer tot uitsluitend de randen en bedrijventerreinen": 2,
+    "Centraal reguleren en stroomlijnen van distributievervoer en snelle koeriersdiensten (pakketbezorging) naar woonwijken en centrum": 1,
+    "Concentreren en reguleren van bouwlogistiek en bouwverkeer (verzamelpunten aan de rand).": 1,
+    "Concentreren van afvalinzameling en bevoorrading op logistieke hubs buiten de woonwijken.": 2,
+    "Faciliteren van retourstromen en materiaaluitwisseling (circulaire stadslogistiek) op grootschalige hubs.": 1,
+    "Faciliteren van uitsluitend schone/uitstootvrije bevoorradingsvoertuigen voor (stads)distributie in het centrum.": 1,
+    "Filteren en reguleren van de sterk toenemende stroom van bestemmingsgebonden bouwverkeer in het stadscentrum": 1,
+    "Fysieke toegang voor bestelbusjes en vrachtverkeer van pakketdiensten weigeren of sterk beperken door het instellen van centrale distributiecentra buiten de stad.": 2,
+    "Het reguleren van de toegang voor stedelijk bevoorradingsverkeer via specifieke (dagrand) venstertijden.": 2,
+    "Instellen van tijdgebonden toegang (venstertijden) voor bevoorradingsverkeer en stadslogistiek op aantrekkelijke stadsstraten.": 2,
+    "Reguleren van bevoorradingsverkeer door inzet van gebundelde stadsdistributie.": 2,
+    "Scheiden en specifiek routeren van zwaar logistiek werkverkeer van lokaal stads- en dorpsverkeer (zoals bij het nieuwe bedrijventerrein Tuk Zuidwest).": 1,
+    "Tijdsrestricties en venstertijden instellen voor de bevoorrading en stadslogistiek.": 1,
+    "Toegang verlenen aan essentieel bevoorradingsverkeer (logistiek) op specifieke assen (Koninginnewal, Kegelbaan, Parklaan) terwijl overig sluipverkeer wordt geweerd": 2,
+    "Toegang voor bevoorradingsverkeer, expeditie en laden/lossen uitsluitend toestaan gedurende specifieke ochtendvenstertijden.": 2,
+    "Toegang waarborgen voor noodzakelijk logistiek verkeer bij horeca en detailhandel in verkeersluwe gebieden.": 1,
+    "Toelaten van stadslogistiek en vrachtverkeer in de binnenstad uitsluitend op basis van emissievrije voertuigkenmerken (ZE-zone).": 1,
+    "Toelaten van uitsluitend kleine, stille en schone voertuigen voor het bevoorraden van winkels en horeca in de binnenstad.": 1,
+    "Toewijzen van specifieke logistieke voorkeursroutes voor zwaar (vracht)verkeer.": 1,
+    "Uitsluitend toelaten van emissievrije bestelbussen en vrachtwagens (stadslogistiek) in het centrum via een Zero Emission Zone": 1,
+    "Uitsluitend toelaten van zero-emissie voertuigen voor stadslogistiek in de binnenstad (vanaf 2025)": 1,
+    "Verplicht sturen van bouwverkeer en bouwlogistiek naar overslaglocaties en bouwhubs aan de stadsrand.": 2,
+    "Weren of inperken van zwaar bevoorradingsverkeer, vrachtwagens en bestelbusjes gedurende reguliere winkeluren.": 1,
+    "Weren van vervuilend (vracht)verkeer door in te zetten op elektrificatie van vrachtvervoer en emissievrije distributie.": 2
+  },
+  "C6": {
+    "Afschermen van kwetsbare natuurzones (Natura 2000) tegen gebiedsvreemde, verstorende activiteiten en zwaar verkeer.": 1,
+    "Het beperken van intensieve agrarische activiteiten in de directe overgangszones (schil) rondom natuurgebieden en woonkernen.": 2,
+    "Het scheiden van zwaar landbouwverkeer en vrachtverkeer van toeristische en recreatieve (fiets)routes in het buitengebied.": 2,
+    "Het uitsluiten van nieuwe grootschalige recreatieve bedrijven rondom reeds drukbezochte natuurgebieden (zoals Bedaf).": 2,
+    "Het weren van intensieve recreatieve toegang (louter zeer extensieve recreatie toestaan) in kwetsbare natuurkernen,.": 3,
+    "Reguleren van recreatieve (voertuig)toegang in en nabij kwetsbare buitengebieden.": 1,
+    "Toegang weren voor doorgaand sluipverkeer in de Groene Scheggen, Waterland en het buitengebied.": 1,
+    "Uitsluitend toelaten van bestemmingsverkeer op randwegen nabij natuur- en waterstructuren.": 1,
+    "Weren van niet-bestemmingsverkeer / concentreren van toeristisch autoverkeer aan de randen van recreatiegebieden.": 1,
+    "Weren van zwaar of intensief verkeer ter bescherming van de groene buitengebieden (zoals Delftse Hout en Midden-Delfland).": 1,
+    "Zonering en weren van recreatieve drukte/recreanten in kwetsbare natuurkernen (Natura 2000, duinen).": 2,
+    "Zonering toepassen en restrictieve toegang instellen voor recreatieve activiteiten en drukte in kwetsbare natuurgebieden": 2
+  },
+  "C7": {
+    "Toegang weigeren voor zwaar wegtransport bij goederen/afval en dit afdwingen of verplaatsen naar transport over water.": 1,
+    "Uitsluiten van doorgaand gemotoriseerd verkeer door een fysieke scheiding/knip te realiseren op de centrale sluis in Blokzijl.": 1,
+    "Weren van doorgaand auto-, vracht- en zwaar landbouwverkeer uit het historische stadshart van Blokzijl.": 1,
+    "Weren van doorgaand gemotoriseerd verkeer op oude en historische (water)lijnen.": 1,
+    "Weren van geparkeerde vrachtwagens uit de directe omgeving van de historische vestingwerken.": 1,
+    "Weren van zwaar (vracht/landbouw)verkeer en hardrijdende auto's op de historische Zeedijk (Kuinderdijk/Vollenhoofse dijk).": 1,
+    "Weren van zwaar verkeer (zoals vrachtwagens en zwaar materieel).": 1
+  },
+  "C8": {
+    "Afschermen van de nachtelijke (verkeers)rust nabij woningen door een strikt scheidingsbeleid in zwaar belaste horeca/nachtleven-zones.": 2,
+    "Fietsverkeer en het (wild)parkeren van fietsen reguleren en weren uit de winkelstraten en de Markt.": 2,
+    "Het reguleren van de toegang voor touringcars en taxi's tot uitsluitend aangewezen in- en uitstapplekken, zonder permanent parkeren in het centrum.": 2,
+    "Reguleren en spreiden (in tijd en ruimte) van verkeersaantrekkende reuring, evenementen, toeristische attracties en horeca.": 1,
+    "Reguleren van piekdrukte door toeristisch en recreatief verkeer.": 1,
+    "Tijdelijk afsluiten van stadsstraten en pleinen voor (auto)verkeer ten behoeve van flexibel, recreatief of maatschappelijk gebruik en evenementen.": 2,
+    "Tijdelijk weren of omleiden van alle fietsverkeer tijdens specifiek ruimtegebruik zoals de weekmarkt en grote evenementen.": 1,
+    "Tijdelijk weren van gemotoriseerd verkeer uit het centrum gedurende het toeristenseizoen (seizoenscenario).": 2,
+    "Weren of sterk beperken van touringcars, partyschepen en toeristenstromen in de (historische) binnenstad.": 1,
+    "Weren van langdurig parkerende of halterende touringcars (zwaar toeristisch verkeer) in de binnenstad.": 1
+  }
+};
+
+const SK_LONG_GEM = {
+  "Afschermen van de nachtelijke (verkeers)rust nabij woningen door een strikt scheidingsbeleid in zwaar belaste horeca/nachtleven-zones.": {
+    "Rotterdam": 2
+  },
+  "Afschermen van kwetsbare natuurzones (Natura 2000) tegen gebiedsvreemde, verstorende activiteiten en zwaar verkeer.": {
+    "Ermelo": 1
+  },
+  "Autoluw en verkeersveilig inrichten van nieuwe en bestaande woonwijken met prioriteit en exclusieve routes voor langzaam verkeer.": {
+    "Steenwijkerland": 2
+  },
+  "Autotoegang garanderen voor mindervaliden tot centrumfuncties en specifieke (zorg)voorzieningen in een autoluwe zone": {
+    "Helmond": 1
+  },
+  "Autoverkeer actief weren of beperken in het kernwinkelgebied en op aanlooproutes via 'auto te gast' en 'shared spaces' principes.": {
+    "Tiel": 1
+  },
+  "Beheersen van inrijdend verkeer van bouwlogistiek, service-, montage- en storingsdiensten in de binnenstad": {
+    "Groningen": 1
+  },
+  "Beheersen van toegangstijden voor logistiek verkeer in de binnenstad (vergroten venstertijdengebied)": {
+    "Groningen": 1
+  },
+  "Beperken van algemeen autogebruik bij winkelcentra ten gunste van langzaam verkeer, met uitzondering van bezoekers uit verder weg gelegen gebieden.": {
+    "Tilburg": 2
+  },
+  "Beperken van autogebruik in schoolomgevingen door prioriteit te geven aan langzame verkeersdeelnemers (lopen/fietsen).": {
+    "Tilburg": 2
+  },
+  "Beperken van de dominantie van en toegang voor doorgaand autoverkeer in de binnenstad en stationsomgeving van Steenwijk.": {
+    "Steenwijkerland": 2
+  },
+  "Beperken van fysieke toegang voor zwaar vrachtverkeer tot uitsluitend de randen en bedrijventerreinen": {
+    "Helmond": 2
+  },
+  "Beperken van regulier en doorgaand (personen)autoverkeer in de stad en het maximeren op 30 km/u.": {
+    "Amsterdam": 2
+  },
+  "Beperken van zwaar doorgaand vrachtverkeer door specifieke dorpskernen (Loenen).": {
+    "Apeldoorn": 1
+  },
+  "Centraal reguleren en stroomlijnen van distributievervoer en snelle koeriersdiensten (pakketbezorging) naar woonwijken en centrum": {
+    "Helmond": 1
+  },
+  "Concentreren en reguleren van bouwlogistiek en bouwverkeer (verzamelpunten aan de rand).": {
+    "Ermelo": 1
+  },
+  "Concentreren van afvalinzameling en bevoorrading op logistieke hubs buiten de woonwijken.": {
+    "Den Haag": 2
+  },
+  "Directe toegang verlenen voor acute en spoedzorg (verloskundigen en kraamzorg tijdens een bevalling).": {
+    "Amsterdam": 1
+  },
+  "Directe toegang verlenen voor acute storingsdiensten (bijvoorbeeld wegenwacht, oplossen gaslek of stroomstoring).": {
+    "Amsterdam": 2
+  },
+  "Exclusief toekennen van toegang en parkeercapaciteit in woongebieden voor lokaal bestemmingsverkeer (gerelateerd aan de woonfunctie).": {
+    "Tilburg": 1
+  },
+  "Faciliteren van retourstromen en materiaaluitwisseling (circulaire stadslogistiek) op grootschalige hubs.": {
+    "Den Haag": 1
+  },
+  "Faciliteren van uitsluitend schone/uitstootvrije bevoorradingsvoertuigen voor (stads)distributie in het centrum.": {
+    "Ermelo": 1
+  },
+  "Fietsverkeer en het (wild)parkeren van fietsen reguleren en weren uit de winkelstraten en de Markt.": {
+    "Tiel": 2
+  },
+  "Filteren en reguleren van de sterk toenemende stroom van bestemmingsgebonden bouwverkeer in het stadscentrum": {
+    "Helmond": 1
+  },
+  "Filteren van toegang in de 'shared space' van de binnenstad ten gunste van kwetsbare voetgangers en minder validen.": {
+    "Tilburg": 2
+  },
+  "Fysiek vrijhouden van zones voor voetgangers en hulpmiddelen ('lopen-plus' / mindervaliden) vrij van hinderobjecten en (snor)fietsen.": {
+    "Ermelo": 2
+  },
+  "Fysieke toegang voor bestelbusjes en vrachtverkeer van pakketdiensten weigeren of sterk beperken door het instellen van centrale distributiecentra buiten de stad.": {
+    "Tiel": 2
+  },
+  "Fysieke toegankelijkheid in autoluwe zones borgen voor mensen met specifieke behoeften (rollator, rolstoel, slechtzienden).": {
+    "Apeldoorn": 1
+  },
+  "Fysieke toegankelijkheid tot de voordeur voor mensen met een fysieke beperking, ouderen en kinderen.": {
+    "Den Haag": 1
+  },
+  "Garanderen van onbelemmerde doorgang voor nood- en hulpdiensten in de openbare ruimte.": {
+    "Delft": 1
+  },
+  "Garanderen van structurele toegankelijkheid (basisbereikbaarheid) tot essentiële maatschappelijke voorzieningen zoals ziekenhuizen.": {
+    "Ermelo": 1
+  },
+  "Garanderen van toegankelijke en veilige verplaatsing voor kwetsbare leeftijdsgroepen (\"8 tot 88 jaar\").": {
+    "Apeldoorn": 1
+  },
+  "Garanderen van toegankelijkheid voor WMO-doelgroepen, minder-validen en ouderen via op maat gemaakt doelgroepenvervoer en speciale voertuigen (zoals driewielers).": {
+    "Tilburg": 1
+  },
+  "Gegarandeerde filevrije (dynamische) routes voor nood- en hulpdiensten.": {
+    "Den Haag": 1
+  },
+  "Het beperken van intensieve agrarische activiteiten in de directe overgangszones (schil) rondom natuurgebieden en woonkernen.": {
+    "Maashorst": 2
+  },
+  "Het borgen van snelle en ongehinderde toegang voor nood- en hulpdiensten in autoluwe woonstraten en voetgangersgebieden.": {
+    "Utrecht": 1
+  },
+  "Het garanderen van fijnmazige, directe toegang voor lokale en sociale vervoersdiensten (zoals buurtbussen, MuzeMobiel en scootmobielpools) in (autoluwe) kernen en wijken,.": {
+    "Maashorst": 1
+  },
+  "Het opdelen van het centrum in afgesloten verkeerscompartimenten (virtueel of fysiek) waardoor onderling doorsteken voor auto's onmogelijk wordt.": {
+    "Utrecht": 1
+  },
+  "Het parkeren op straat voorbehouden aan direct omwonenden, door verplaatsing van bezoekersparkeren naar garages of P+R faciliteiten aan de stadsrand.": {
+    "Utrecht": 2
+  },
+  "Het reguleren van de toegang voor stedelijk bevoorradingsverkeer via specifieke (dagrand) venstertijden.": {
+    "Utrecht": 2
+  },
+  "Het reguleren van de toegang voor touringcars en taxi's tot uitsluitend aangewezen in- en uitstapplekken, zonder permanent parkeren in het centrum.": {
+    "Utrecht": 2
+  },
+  "Het scheiden van zwaar landbouwverkeer en vrachtverkeer van toeristische en recreatieve (fiets)routes in het buitengebied.": {
+    "Maashorst": 2
+  },
+  "Het te allen tijde garanderen van toegang en directe bereikbaarheid (inclusief parkeergelegenheid) voor mindervaliden in autoluwe gebieden.": {
+    "Utrecht": 1
+  },
+  "Het uitsluiten van nieuwe grootschalige recreatieve bedrijven rondom reeds drukbezochte natuurgebieden (zoals Bedaf).": {
+    "Maashorst": 2
+  },
+  "Het weren van intensieve recreatieve toegang (louter zeer extensieve recreatie toestaan) in kwetsbare natuurkernen,.": {
+    "Maashorst": 3
+  },
+  "Het weren van snorfietsen en hogesnelheidsfietsen (speed pedelecs) van drukke fietspaden, met een verplichting om de rijbaan te gebruiken.": {
+    "Utrecht": 1
+  },
+  "Instellen van tijdgebonden toegang (venstertijden) voor bevoorradingsverkeer en stadslogistiek op aantrekkelijke stadsstraten.": {
+    "Rotterdam": 2
+  },
+  "Nabije en directe toegang verlenen voor acute medische nood- en hulpdiensten (brandweer, ambulance, politie, orgaantransport).": {
+    "Amsterdam": 1
+  },
+  "Omleiden van regionaal en stedelijk doorgaand vrachtverkeer naar robuuste randwegen buiten de stad": {
+    "Helmond": 2
+  },
+  "Onbelemmerde doorgang voor nood- en hulpdiensten in autoluwe en 30 km/u-zones.": {
+    "Den Haag": 1
+  },
+  "Ontmoedigen en omleiden van doorgaand fietsverkeer (routegebruikers) rondom het centrumgebied.": {
+    "Venray": 1
+  },
+  "Ontmoedigen van algemeen autogebruik nabij onderwijsclusters.": {
+    "Tilburg": 1
+  },
+  "Prioriteit en ongehinderde doorgang garanderen voor nood- en hulpdiensten, specifiek bij fysieke barrières zoals spooroverwegen.": {
+    "Ermelo": 1
+  },
+  "Regionale autobezoekers weren uit het hart van de stad en afvangen aan de randen.": {
+    "Delft": 2
+  },
+  "Reguleren en spreiden (in tijd en ruimte) van verkeersaantrekkende reuring, evenementen, toeristische attracties en horeca.": {
+    "Rotterdam": 1
+  },
+  "Reguleren en uitsluiten van dominant autoverkeer rondom schoolomgevingen (zoals de Schansweg, Zuidveenseweg en Vendelweg) middels 30 km/uur-zones en autoluwe inrichting.": {
+    "Steenwijkerland": 2
+  },
+  "Reguleren van bevoorradingsverkeer door inzet van gebundelde stadsdistributie.": {
+    "Apeldoorn": 2
+  },
+  "Reguleren van piekdrukte door toeristisch en recreatief verkeer.": {
+    "Apeldoorn": 1
+  },
+  "Reguleren van recreatieve (voertuig)toegang in en nabij kwetsbare buitengebieden.": {
+    "Steenwijkerland": 1
+  },
+  "Scheiden en specifiek routeren van zwaar logistiek werkverkeer van lokaal stads- en dorpsverkeer (zoals bij het nieuwe bedrijventerrein Tuk Zuidwest).": {
+    "Steenwijkerland": 1
+  },
+  "Snelheidsrestrictie (maximaal 30 km/u) afdwingen voor alle gemotoriseerde voertuigen in woonwijken en op wijkontsluitingswegen": {
+    "Helmond": 2
+  },
+  "Specifieke toegang en ruimte borgen voor doelgroepenvervoer (rolstoelauto's, scootmobielen, hubtaxi's) bij zorghubs en zorginstellingen.": {
+    "Ermelo": 1
+  },
+  "Tegengaan van doorgaand sluipverkeer op kleine wegen in het buitengebied.": {
+    "Apeldoorn": 1
+  },
+  "Tijdelijk afsluiten van stadsstraten en pleinen voor (auto)verkeer ten behoeve van flexibel, recreatief of maatschappelijk gebruik en evenementen.": {
+    "Rotterdam": 2
+  },
+  "Tijdelijk weren of omleiden van alle fietsverkeer tijdens specifiek ruimtegebruik zoals de weekmarkt en grote evenementen.": {
+    "Venray": 1
+  },
+  "Tijdelijk weren van gemotoriseerd (haal- en breng)verkeer direct voor scholen (venstertijden / schoolstraat).": {
+    "Ermelo": 1
+  },
+  "Tijdelijk weren van gemotoriseerd verkeer uit het centrum gedurende het toeristenseizoen (seizoenscenario).": {
+    "Ermelo": 2
+  },
+  "Tijdelijk weren van inrijdend gemotoriseerd verkeer (halende en brengende ouders) rondom scholen": {
+    "Groningen": 2
+  },
+  "Tijdsgebonden weren van al het gemotoriseerde verkeer rondom scholen gedurende haal- en brengtijden (autovrije schoolomgevingen).": {
+    "Rotterdam": 2
+  },
+  "Tijdsgebonden weren van fietsers in voetgangersgebieden (tussen 11:00 en 18:00/21:00 uur).": {
+    "Apeldoorn": 2
+  },
+  "Tijdsrestricties en venstertijden instellen voor de bevoorrading en stadslogistiek.": {
+    "Amsterdam": 1
+  },
+  "Toegang bieden aan hulpdiensten en nooddiensten bij fysieke wegafsluitingen (knips)": {
+    "Groningen": 1
+  },
+  "Toegang en parkeergelegenheid nabij bestemmingen behouden voor bewoners en bezoekers die om gezondheidsredenen afhankelijk zijn van de auto": {
+    "Helmond": 1
+  },
+  "Toegang en parkeerruimte verlenen voor geplande ambulante (thuis)zorg en welzijnswerkers.": {
+    "Amsterdam": 1
+  },
+  "Toegang en specifieke parkeermogelijkheden (zoals een vergunning) toewijzen aan mantelzorgers.": {
+    "Tiel": 1
+  },
+  "Toegang per auto voor mantelzorgers en werknemers met nachtdiensten in de wijk.": {
+    "Den Haag": 1
+  },
+  "Toegang tijdelijk blokkeren voor al het gemotoriseerde verkeer rondom scholen (inrichten van zogeheten schoolstraten).": {
+    "Amsterdam": 1
+  },
+  "Toegang verlenen aan essentieel bevoorradingsverkeer (logistiek) op specifieke assen (Koninginnewal, Kegelbaan, Parklaan) terwijl overig sluipverkeer wordt geweerd": {
+    "Helmond": 2
+  },
+  "Toegang verlenen aan mantelzorgers en reguliere vrijwilligers (sociaal belang behartigende instellingen).": {
+    "Amsterdam": 1
+  },
+  "Toegang verlenen aan taxi's en specifieke hulpdiensten op vrije lijnbusbanen.": {
+    "Amsterdam": 1
+  },
+  "Toegang verlenen aan touringcars met specifieke kwetsbare groepen (kinderen t/m 12, senioren) richting cultuur/educatie-bestemmingen.": {
+    "Amsterdam": 1
+  },
+  "Toegang voor bevoorradingsverkeer, expeditie en laden/lossen uitsluitend toestaan gedurende specifieke ochtendvenstertijden.": {
+    "Tiel": 2
+  },
+  "Toegang waarborgen voor noodzakelijk logistiek verkeer bij horeca en detailhandel in verkeersluwe gebieden.": {
+    "Ermelo": 1
+  },
+  "Toegang weigeren / filteren van doorgaand regionaal autoverkeer op het stedelijke wegennet; afvangen bij hubs aan de stadsrand.": {
+    "Amsterdam": 2
+  },
+  "Toegang weigeren voor doorgaand verkeer ter bescherming van woonwijken en verblijfsgebieden.": {
+    "Amsterdam": 1
+  },
+  "Toegang weigeren voor zwaar wegtransport bij goederen/afval en dit afdwingen of verplaatsen naar transport over water.": {
+    "Amsterdam": 1
+  },
+  "Toegang weren voor doorgaand sluipverkeer in de Groene Scheggen, Waterland en het buitengebied.": {
+    "Amsterdam": 1
+  },
+  "Toegankelijkheid van de autoluwe binnenstad waarborgen voor mindervaliden en hun voertuigen.": {
+    "Tiel": 1
+  },
+  "Toegankelijkheid voor specifieke kwetsbare groepen faciliteren door integratie van doelgroepenvervoer in het reguliere stads-OV.": {
+    "Apeldoorn": 1
+  },
+  "Toegankelijkheid waarborgen voor ouderen en mindervaliden per auto in autoluwe zones": {
+    "Groningen": 1
+  },
+  "Toelaten van stadslogistiek en vrachtverkeer in de binnenstad uitsluitend op basis van emissievrije voertuigkenmerken (ZE-zone).": {
+    "Rotterdam": 1
+  },
+  "Toelaten van toegang met fietsen en scootmobielen voor ouderen en minder-mobiele burgers in de voetgangerszone.": {
+    "Venray": 1
+  },
+  "Toelaten van uitsluitend kleine, stille en schone voertuigen voor het bevoorraden van winkels en horeca in de binnenstad.": {
+    "Tilburg": 1
+  },
+  "Toestaan van fietsen tot in de autoluwe zones voor zorgverleners (zoals wijkverpleegkundigen).": {
+    "Venray": 1
+  },
+  "Toestaan van uitzonderingen voor direct parkeren nabij woningen in het centrum voor bewoners met bijzondere (medische) omstandigheden": {
+    "Helmond": 1
+  },
+  "Toewijzen van specifieke logistieke voorkeursroutes voor zwaar (vracht)verkeer.": {
+    "Ermelo": 1
+  },
+  "Tot aan de voordeur toegang verlenen voor het halen en brengen van uiterst kwetsbare personen (mensen met beperking, ouderen, speciaal leerlingenvervoer).": {
+    "Amsterdam": 1
+  },
+  "Uitsluiten van autoverkeer (bezoekers) in de binnenstad door toegang te filteren en voertuigen te sturen naar gebundelde parkeerhubs aan de randen.": {
+    "Steenwijkerland": 2
+  },
+  "Uitsluiten van doorgaand (recreatief) autoverkeer in het dorp Ossenzijl door middel van een fysieke randweg.": {
+    "Steenwijkerland": 1
+  },
+  "Uitsluiten van doorgaand auto- en busverkeer op specifieke promenades.": {
+    "Apeldoorn": 1
+  },
+  "Uitsluiten van doorgaand gemotoriseerd verkeer door een fysieke scheiding/knip te realiseren op de centrale sluis in Blokzijl.": {
+    "Steenwijkerland": 1
+  },
+  "Uitsluitend toelaten van bestemmingsverkeer op randwegen nabij natuur- en waterstructuren.": {
+    "Apeldoorn": 1
+  },
+  "Uitsluitend toelaten van emissievrije bestelbussen en vrachtwagens (stadslogistiek) in het centrum via een Zero Emission Zone": {
+    "Helmond": 1
+  },
+  "Uitsluitend toelaten van zero-emissie voertuigen voor stadslogistiek in de binnenstad (vanaf 2025)": {
+    "Groningen": 1
+  },
+  "Verplicht sturen van bouwverkeer en bouwlogistiek naar overslaglocaties en bouwhubs aan de stadsrand.": {
+    "Rotterdam": 2
+  },
+  "Volledig weren van doorgaand autoverkeer op de Kanaaldijk Noord-West": {
+    "Helmond": 1
+  },
+  "Voorrangsrecht bieden aan gehandicapten voor parkeren op straat, ook in gebieden met voornamelijk betaald/schaars parkeren": {
+    "Groningen": 1
+  },
+  "Weren en strenger reguleren van logistieke maaltijdbezorgers op fietsen en gemotoriseerde tweewielers in het centrum.": {
+    "Venray": 1
+  },
+  "Weren of inperken van zwaar bevoorradingsverkeer, vrachtwagens en bestelbusjes gedurende reguliere winkeluren.": {
+    "Venray": 1
+  },
+  "Weren of scheiden van snelle voertuigen van fietsroutes (grote snelheidsverschillen reguleren).": {
+    "Den Haag": 1
+  },
+  "Weren of sterk beperken van touringcars, partyschepen en toeristenstromen in de (historische) binnenstad.": {
+    "Amsterdam": 1
+  },
+  "Weren van doorgaand (vracht)autoverkeer in reguliere woongebieden ten gunste van lokaal bestemmingsverkeer.": {
+    "Tilburg": 2
+  },
+  "Weren van doorgaand auto-, vracht- en zwaar landbouwverkeer uit het historische stadshart van Blokzijl.": {
+    "Steenwijkerland": 1
+  },
+  "Weren van doorgaand autoverkeer door en tussen woonwijken en dorpen": {
+    "Groningen": 1
+  },
+  "Weren van doorgaand autoverkeer op en binnen de centrumring (verkeersaders opknippen).": {
+    "Apeldoorn": 1
+  },
+  "Weren van doorgaand autoverkeer uit het stadscentrum en woonwijken": {
+    "Helmond": 1
+  },
+  "Weren van doorgaand autoverkeer uit woonwijken (erftoegangswegen) en concentreren op hoofdwegen.": {
+    "Den Haag": 1
+  },
+  "Weren van doorgaand en zwaar vrachtverkeer in woonstraten en door de bebouwde kom.": {
+    "Ermelo": 1
+  },
+  "Weren van doorgaand gemotoriseerd verkeer in het centrumgebied.": {
+    "Ermelo": 1
+  },
+  "Weren van doorgaand gemotoriseerd verkeer op oude en historische (water)lijnen.": {
+    "Delft": 1
+  },
+  "Weren van doorgaand noord-zuid interwijkverkeer en sluipverkeer aan de oostzijde van het centrum (Zuidende/Stationsstraat)": {
+    "Helmond": 1
+  },
+  "Weren van doorgaand sluipverkeer in woonwijken en in het kwetsbare buitengebied.": {
+    "Ermelo": 1
+  },
+  "Weren van gemotoriseerd verkeer, bromfietsen, scooters en (opgevoerde) fatbikes binnen het gehele voetgangersgebied.": {
+    "Venray": 1
+  },
+  "Weren van geparkeerde vrachtwagens uit de directe omgeving van de historische vestingwerken.": {
+    "Steenwijkerland": 1
+  },
+  "Weren van langdurig parkerende of halterende touringcars (zwaar toeristisch verkeer) in de binnenstad.": {
+    "Rotterdam": 1
+  },
+  "Weren van niet-bestemmingsverkeer / concentreren van toeristisch autoverkeer aan de randen van recreatiegebieden.": {
+    "Ermelo": 1
+  },
+  "Weren van niet-bestemmingsverkeer en autoluw maken van specifieke wegen (zoals de Kerkweg en Bramen).": {
+    "Steenwijkerland": 2
+  },
+  "Weren van niet-lokaal en doorgaand vrachtverkeer op woon- en wijkwegen.": {
+    "Apeldoorn": 1
+  },
+  "Weren van onnodig doorgaand (vracht)autoverkeer in woon- en verblijfsgebieden (zoals de binnenstad).": {
+    "Tilburg": 1
+  },
+  "Weren van overmatig (snel) autoverkeer in de directe omgeving van scholen.": {
+    "Apeldoorn": 1
+  },
+  "Weren van vervuilend (vracht)verkeer door in te zetten op elektrificatie van vrachtvervoer en emissievrije distributie.": {
+    "Tiel": 2
+  },
+  "Weren van wijkvreemd verkeer (forenzen en bezoekers) bij straatparkeren in woonwijken": {
+    "Groningen": 1
+  },
+  "Weren van zwaar (vracht/landbouw)verkeer en hardrijdende auto's op de historische Zeedijk (Kuinderdijk/Vollenhoofse dijk).": {
+    "Steenwijkerland": 1
+  },
+  "Weren van zwaar of intensief verkeer ter bescherming van de groene buitengebieden (zoals Delftse Hout en Midden-Delfland).": {
+    "Delft": 1
+  },
+  "Weren van zwaar verkeer (zoals vrachtwagens en zwaar materieel).": {
+    "Amsterdam": 1
+  },
+  "Zonering en weren van recreatieve drukte/recreanten in kwetsbare natuurkernen (Natura 2000, duinen).": {
+    "Den Haag": 2
+  },
+  "Zonering toepassen en restrictieve toegang instellen voor recreatieve activiteiten en drukte in kwetsbare natuurgebieden": {
+    "Helmond": 2
+  }
+};
+
+const CL_ORDER = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"];
+
+const LONG_ORDER = ["Het weren van intensieve recreatieve toegang (louter zeer extensieve recreatie toestaan) in kwetsbare natuurkernen,.", "Toegang weigeren / filteren van doorgaand regionaal autoverkeer op het stedelijke wegennet; afvangen bij hubs aan de stadsrand.", "Concentreren van afvalinzameling en bevoorrading op logistieke hubs buiten de woonwijken.", "Fysiek vrijhouden van zones voor voetgangers en hulpmiddelen ('lopen-plus' / mindervaliden) vrij van hinderobjecten en (snor)fietsen.", "Beperken van regulier en doorgaand (personen)autoverkeer in de stad en het maximeren op 30 km/u.", "Tijdsgebonden weren van fietsers in voetgangersgebieden (tussen 11:00 en 18:00/21:00 uur).", "Directe toegang verlenen voor acute storingsdiensten (bijvoorbeeld wegenwacht, oplossen gaslek of stroomstoring).", "Regionale autobezoekers weren uit het hart van de stad en afvangen aan de randen.", "Beperken van algemeen autogebruik bij winkelcentra ten gunste van langzaam verkeer, met uitzondering van bezoekers uit verder weg gelegen gebieden.", "Het reguleren van de toegang voor touringcars en taxi's tot uitsluitend aangewezen in- en uitstapplekken, zonder permanent parkeren in het centrum.", "Het reguleren van de toegang voor stedelijk bevoorradingsverkeer via specifieke (dagrand) venstertijden.", "Het parkeren op straat voorbehouden aan direct omwonenden, door verplaatsing van bezoekersparkeren naar garages of P+R faciliteiten aan de stadsrand.", "Fietsverkeer en het (wild)parkeren van fietsen reguleren en weren uit de winkelstraten en de Markt.", "Fysieke toegang voor bestelbusjes en vrachtverkeer van pakketdiensten weigeren of sterk beperken door het instellen van centrale distributiecentra buiten de stad.", "Weren van vervuilend (vracht)verkeer door in te zetten op elektrificatie van vrachtvervoer en emissievrije distributie.", "Reguleren van bevoorradingsverkeer door inzet van gebundelde stadsdistributie.", "Tijdelijk weren van inrijdend gemotoriseerd verkeer (halende en brengende ouders) rondom scholen", "Toegang verlenen aan essentieel bevoorradingsverkeer (logistiek) op specifieke assen (Koninginnewal, Kegelbaan, Parklaan) terwijl overig sluipverkeer wordt geweerd", "Beperken van fysieke toegang voor zwaar vrachtverkeer tot uitsluitend de randen en bedrijventerreinen", "Omleiden van regionaal en stedelijk doorgaand vrachtverkeer naar robuuste randwegen buiten de stad", "Tijdelijk weren van gemotoriseerd verkeer uit het centrum gedurende het toeristenseizoen (seizoenscenario).", "Weren van doorgaand (vracht)autoverkeer in reguliere woongebieden ten gunste van lokaal bestemmingsverkeer.", "Filteren van toegang in de 'shared space' van de binnenstad ten gunste van kwetsbare voetgangers en minder validen.", "Zonering en weren van recreatieve drukte/recreanten in kwetsbare natuurkernen (Natura 2000, duinen).", "Reguleren en uitsluiten van dominant autoverkeer rondom schoolomgevingen (zoals de Schansweg, Zuidveenseweg en Vendelweg) middels 30 km/uur-zones en autoluwe inrichting.", "Verplicht sturen van bouwverkeer en bouwlogistiek naar overslaglocaties en bouwhubs aan de stadsrand.", "Tijdsgebonden weren van al het gemotoriseerde verkeer rondom scholen gedurende haal- en brengtijden (autovrije schoolomgevingen).", "Instellen van tijdgebonden toegang (venstertijden) voor bevoorradingsverkeer en stadslogistiek op aantrekkelijke stadsstraten.", "Autoluw en verkeersveilig inrichten van nieuwe en bestaande woonwijken met prioriteit en exclusieve routes voor langzaam verkeer.", "Uitsluiten van autoverkeer (bezoekers) in de binnenstad door toegang te filteren en voertuigen te sturen naar gebundelde parkeerhubs aan de randen.", "Beperken van de dominantie van en toegang voor doorgaand autoverkeer in de binnenstad en stationsomgeving van Steenwijk.", "Weren van niet-bestemmingsverkeer en autoluw maken van specifieke wegen (zoals de Kerkweg en Bramen).", "Het scheiden van zwaar landbouwverkeer en vrachtverkeer van toeristische en recreatieve (fiets)routes in het buitengebied.", "Zonering toepassen en restrictieve toegang instellen voor recreatieve activiteiten en drukte in kwetsbare natuurgebieden", "Het uitsluiten van nieuwe grootschalige recreatieve bedrijven rondom reeds drukbezochte natuurgebieden (zoals Bedaf).", "Het beperken van intensieve agrarische activiteiten in de directe overgangszones (schil) rondom natuurgebieden en woonkernen.", "Afschermen van de nachtelijke (verkeers)rust nabij woningen door een strikt scheidingsbeleid in zwaar belaste horeca/nachtleven-zones.", "Tijdelijk afsluiten van stadsstraten en pleinen voor (auto)verkeer ten behoeve van flexibel, recreatief of maatschappelijk gebruik en evenementen.", "Snelheidsrestrictie (maximaal 30 km/u) afdwingen voor alle gemotoriseerde voertuigen in woonwijken en op wijkontsluitingswegen", "Beperken van autogebruik in schoolomgevingen door prioriteit te geven aan langzame verkeersdeelnemers (lopen/fietsen).", "Toegang voor bevoorradingsverkeer, expeditie en laden/lossen uitsluitend toestaan gedurende specifieke ochtendvenstertijden.", "Toegang tijdelijk blokkeren voor al het gemotoriseerde verkeer rondom scholen (inrichten van zogeheten schoolstraten).", "Toegang weren voor doorgaand sluipverkeer in de Groene Scheggen, Waterland en het buitengebied.", "Toegang weigeren voor doorgaand verkeer ter bescherming van woonwijken en verblijfsgebieden.", "Tijdsrestricties en venstertijden instellen voor de bevoorrading en stadslogistiek.", "Weren van zwaar verkeer (zoals vrachtwagens en zwaar materieel).", "Directe toegang verlenen voor acute en spoedzorg (verloskundigen en kraamzorg tijdens een bevalling).", "Toegang weigeren voor zwaar wegtransport bij goederen/afval en dit afdwingen of verplaatsen naar transport over water.", "Toegang per auto voor mantelzorgers en werknemers met nachtdiensten in de wijk.", "Gegarandeerde filevrije (dynamische) routes voor nood- en hulpdiensten.", "Onbelemmerde doorgang voor nood- en hulpdiensten in autoluwe en 30 km/u-zones.", "Weren van doorgaand autoverkeer uit woonwijken (erftoegangswegen) en concentreren op hoofdwegen.", "Weren of scheiden van snelle voertuigen van fietsroutes (grote snelheidsverschillen reguleren).", "Toegang verlenen aan touringcars met specifieke kwetsbare groepen (kinderen t/m 12, senioren) richting cultuur/educatie-bestemmingen.", "Toegang verlenen aan mantelzorgers en reguliere vrijwilligers (sociaal belang behartigende instellingen).", "Tot aan de voordeur toegang verlenen voor het halen en brengen van uiterst kwetsbare personen (mensen met beperking, ouderen, speciaal leerlingenvervoer).", "Toegankelijkheid voor specifieke kwetsbare groepen faciliteren door integratie van doelgroepenvervoer in het reguliere stads-OV.", "Tegengaan van doorgaand sluipverkeer op kleine wegen in het buitengebied.", "Weren van doorgaand autoverkeer op en binnen de centrumring (verkeersaders opknippen).", "Garanderen van toegankelijke en veilige verplaatsing voor kwetsbare leeftijdsgroepen (\"8 tot 88 jaar\").", "Weren van overmatig (snel) autoverkeer in de directe omgeving van scholen.", "Reguleren van piekdrukte door toeristisch en recreatief verkeer.", "Uitsluitend toelaten van bestemmingsverkeer op randwegen nabij natuur- en waterstructuren.", "Fysieke toegankelijkheid in autoluwe zones borgen voor mensen met specifieke behoeften (rollator, rolstoel, slechtzienden).", "Weren van doorgaand gemotoriseerd verkeer op oude en historische (water)lijnen.", "Weren of sterk beperken van touringcars, partyschepen en toeristenstromen in de (historische) binnenstad.", "Beperken van zwaar doorgaand vrachtverkeer door specifieke dorpskernen (Loenen).", "Uitsluiten van doorgaand auto- en busverkeer op specifieke promenades.", "Weren van niet-lokaal en doorgaand vrachtverkeer op woon- en wijkwegen.", "Toegang verlenen aan taxi's en specifieke hulpdiensten op vrije lijnbusbanen.", "Toegang en parkeerruimte verlenen voor geplande ambulante (thuis)zorg en welzijnswerkers.", "Nabije en directe toegang verlenen voor acute medische nood- en hulpdiensten (brandweer, ambulance, politie, orgaantransport).", "Weren van doorgaand autoverkeer uit het stadscentrum en woonwijken", "Uitsluitend toelaten van zero-emissie voertuigen voor stadslogistiek in de binnenstad (vanaf 2025)", "Beheersen van toegangstijden voor logistiek verkeer in de binnenstad (vergroten venstertijdengebied)", "Filteren en reguleren van de sterk toenemende stroom van bestemmingsgebonden bouwverkeer in het stadscentrum", "Weren van wijkvreemd verkeer (forenzen en bezoekers) bij straatparkeren in woonwijken", "Voorrangsrecht bieden aan gehandicapten voor parkeren op straat, ook in gebieden met voornamelijk betaald/schaars parkeren", "Toegang bieden aan hulpdiensten en nooddiensten bij fysieke wegafsluitingen (knips)", "Toegankelijkheid waarborgen voor ouderen en mindervaliden per auto in autoluwe zones", "Concentreren en reguleren van bouwlogistiek en bouwverkeer (verzamelpunten aan de rand).", "Beheersen van inrijdend verkeer van bouwlogistiek, service-, montage- en storingsdiensten in de binnenstad", "Toegang waarborgen voor noodzakelijk logistiek verkeer bij horeca en detailhandel in verkeersluwe gebieden.", "Weren van doorgaand autoverkeer door en tussen woonwijken en dorpen", "Prioriteit en ongehinderde doorgang garanderen voor nood- en hulpdiensten, specifiek bij fysieke barrières zoals spooroverwegen.", "Tijdelijk weren van gemotoriseerd (haal- en breng)verkeer direct voor scholen (venstertijden / schoolstraat).", "Specifieke toegang en ruimte borgen voor doelgroepenvervoer (rolstoelauto's, scootmobielen, hubtaxi's) bij zorghubs en zorginstellingen.", "Garanderen van structurele toegankelijkheid (basisbereikbaarheid) tot essentiële maatschappelijke voorzieningen zoals ziekenhuizen.", "Faciliteren van uitsluitend schone/uitstootvrije bevoorradingsvoertuigen voor (stads)distributie in het centrum.", "Faciliteren van retourstromen en materiaaluitwisseling (circulaire stadslogistiek) op grootschalige hubs.", "Afschermen van kwetsbare natuurzones (Natura 2000) tegen gebiedsvreemde, verstorende activiteiten en zwaar verkeer.", "Weren van niet-bestemmingsverkeer / concentreren van toeristisch autoverkeer aan de randen van recreatiegebieden.", "Weren van doorgaand gemotoriseerd verkeer in het centrumgebied.", "Weren van doorgaand sluipverkeer in woonwijken en in het kwetsbare buitengebied.", "Weren van doorgaand en zwaar vrachtverkeer in woonstraten en door de bebouwde kom.", "Toewijzen van specifieke logistieke voorkeursroutes voor zwaar (vracht)verkeer.", "Fysieke toegankelijkheid tot de voordeur voor mensen met een fysieke beperking, ouderen en kinderen.", "Weren van zwaar of intensief verkeer ter bescherming van de groene buitengebieden (zoals Delftse Hout en Midden-Delfland).", "Garanderen van onbelemmerde doorgang voor nood- en hulpdiensten in de openbare ruimte.", "Volledig weren van doorgaand autoverkeer op de Kanaaldijk Noord-West", "Het garanderen van fijnmazige, directe toegang voor lokale en sociale vervoersdiensten (zoals buurtbussen, MuzeMobiel en scootmobielpools) in (autoluwe) kernen en wijken,.", "Weren van doorgaand noord-zuid interwijkverkeer en sluipverkeer aan de oostzijde van het centrum (Zuidende/Stationsstraat)", "Toestaan van uitzonderingen voor direct parkeren nabij woningen in het centrum voor bewoners met bijzondere (medische) omstandigheden", "Uitsluitend toelaten van emissievrije bestelbussen en vrachtwagens (stadslogistiek) in het centrum via een Zero Emission Zone", "Weren van doorgaand auto-, vracht- en zwaar landbouwverkeer uit het historische stadshart van Blokzijl.", "Uitsluiten van doorgaand gemotoriseerd verkeer door een fysieke scheiding/knip te realiseren op de centrale sluis in Blokzijl.", "Uitsluiten van doorgaand (recreatief) autoverkeer in het dorp Ossenzijl door middel van een fysieke randweg.", "Weren van zwaar (vracht/landbouw)verkeer en hardrijdende auto's op de historische Zeedijk (Kuinderdijk/Vollenhoofse dijk).", "Scheiden en specifiek routeren van zwaar logistiek werkverkeer van lokaal stads- en dorpsverkeer (zoals bij het nieuwe bedrijventerrein Tuk Zuidwest).", "Reguleren van recreatieve (voertuig)toegang in en nabij kwetsbare buitengebieden.", "Weren van langdurig parkerende of halterende touringcars (zwaar toeristisch verkeer) in de binnenstad.", "Toelaten van stadslogistiek en vrachtverkeer in de binnenstad uitsluitend op basis van emissievrije voertuigkenmerken (ZE-zone).", "Reguleren en spreiden (in tijd en ruimte) van verkeersaantrekkende reuring, evenementen, toeristische attracties en horeca.", "Toegang en parkeergelegenheid nabij bestemmingen behouden voor bewoners en bezoekers die om gezondheidsredenen afhankelijk zijn van de auto", "Centraal reguleren en stroomlijnen van distributievervoer en snelle koeriersdiensten (pakketbezorging) naar woonwijken en centrum", "Autotoegang garanderen voor mindervaliden tot centrumfuncties en specifieke (zorg)voorzieningen in een autoluwe zone", "Exclusief toekennen van toegang en parkeercapaciteit in woongebieden voor lokaal bestemmingsverkeer (gerelateerd aan de woonfunctie).", "Toegankelijkheid van de autoluwe binnenstad waarborgen voor mindervaliden en hun voertuigen.", "Weren van geparkeerde vrachtwagens uit de directe omgeving van de historische vestingwerken.", "Autoverkeer actief weren of beperken in het kernwinkelgebied en op aanlooproutes via 'auto te gast' en 'shared spaces' principes.", "Weren van onnodig doorgaand (vracht)autoverkeer in woon- en verblijfsgebieden (zoals de binnenstad).", "Ontmoedigen van algemeen autogebruik nabij onderwijsclusters.", "Toegang en specifieke parkeermogelijkheden (zoals een vergunning) toewijzen aan mantelzorgers.", "Toelaten van uitsluitend kleine, stille en schone voertuigen voor het bevoorraden van winkels en horeca in de binnenstad.", "Het te allen tijde garanderen van toegang en directe bereikbaarheid (inclusief parkeergelegenheid) voor mindervaliden in autoluwe gebieden.", "Het weren van snorfietsen en hogesnelheidsfietsen (speed pedelecs) van drukke fietspaden, met een verplichting om de rijbaan te gebruiken.", "Het opdelen van het centrum in afgesloten verkeerscompartimenten (virtueel of fysiek) waardoor onderling doorsteken voor auto's onmogelijk wordt.", "Garanderen van toegankelijkheid voor WMO-doelgroepen, minder-validen en ouderen via op maat gemaakt doelgroepenvervoer en speciale voertuigen (zoals driewielers).", "Het borgen van snelle en ongehinderde toegang voor nood- en hulpdiensten in autoluwe woonstraten en voetgangersgebieden.", "Weren van gemotoriseerd verkeer, bromfietsen, scooters en (opgevoerde) fatbikes binnen het gehele voetgangersgebied.", "Weren of inperken van zwaar bevoorradingsverkeer, vrachtwagens en bestelbusjes gedurende reguliere winkeluren.", "Ontmoedigen en omleiden van doorgaand fietsverkeer (routegebruikers) rondom het centrumgebied.", "Tijdelijk weren of omleiden van alle fietsverkeer tijdens specifiek ruimtegebruik zoals de weekmarkt en grote evenementen.", "Weren en strenger reguleren van logistieke maaltijdbezorgers op fietsen en gemotoriseerde tweewielers in het centrum.", "Toelaten van toegang met fietsen en scootmobielen voor ouderen en minder-mobiele burgers in de voetgangerszone.", "Toestaan van fietsen tot in de autoluwe zones voor zorgverleners (zoals wijkverpleegkundigen)."];
+
+const GEMEENTE_ORDER = ["Amsterdam", "Helmond", "Steenwijkerland", "Ermelo", "Apeldoorn", "Rotterdam", "Tilburg", "Tiel", "Den Haag", "Groningen", "Utrecht", "Maashorst", "Venray", "Delft"];
+
+// TOOLTIP
+const TT = document.getElementById('tt');
+
+function showTT(e, html){
+  TT.innerHTML = html;
+  TT.style.opacity = '1';
+  moveTT(e);
+}
+
+function moveTT(e){
+  TT.style.left = (e.clientX + 14) + 'px';
+  TT.style.top = (e.clientY - 50) + 'px';
+}
+
+function hideTT(){
+  TT.style.opacity = '0';
+}
+
+// SANKEY
+(function(){
+  const W = 1180;
+  const H = 760;
+  const PAD = 6;
+  const NODE_W = 22;
+
+  const X1 = 220;
+  const X2 = 600;
+  const X3 = 980;
+
+  const svg = document.getElementById('sankeySvg');
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const clColors = {
+    'C1':'#D4365A',
+    'C2':'#E07020',
+    'C3':'#2A8040',
+    'C4':'#1A6DAF',
+    'C5':'#C03030',
+    'C6':'#6050B0',
+    'C7':'#B07020',
+    'C8':'#10908A'
+  };
+
+  function clusterLabel(code){
+    const found = CLUSTERS_DATA.find(c => c.code === code);
+    return found ? found.naam : code;
+  }
+
+  function clusterColor(code){
+    return clColors[code] || '#888888';
+  }
+
+  const longTot = {};
+
+  Object.values(SK_CLUSTER_LONG).forEach(longMap => {
+    Object.entries(longMap).forEach(([longlist, n]) => {
+      longTot[longlist] = (longTot[longlist] || 0) + n;
+    });
+  });
+
+  const gemTot = {};
+
+  Object.values(SK_LONG_GEM).forEach(gemMap => {
+    Object.entries(gemMap).forEach(([gemeente, n]) => {
+      gemTot[gemeente] = (gemTot[gemeente] || 0) + n;
+    });
+  });
+
+  const clusterTot = {};
+
+  Object.entries(SK_CLUSTER_LONG).forEach(([cluster, longMap]) => {
+    clusterTot[cluster] = Object.values(longMap).reduce((a, b) => a + b, 0);
+  });
+
+  const grand = Object.values(clusterTot).reduce((a, b) => a + b, 0);
+
+  function layoutNodes(items, x){
+    const cleanItems = items.filter(([name, n]) => n > 0);
+    const avail = H - PAD * (cleanItems.length - 1) - 60;
+    let y = 30;
+
+    return cleanItems.map(([name, n]) => {
+      const h = Math.max(8, (n / grand) * avail);
+
+      const node = {
+        name,
+        n,
+        x,
+        y,
+        h,
+        w: NODE_W
+      };
+
+      y += h + PAD;
+      return node;
+    });
+  }
+
+  const clusterItems = CL_ORDER.map(cluster => [cluster, clusterTot[cluster] || 0]);
+  const longItems = LONG_ORDER.map(longlist => [longlist, longTot[longlist] || 0]);
+  const gemeenteItems = GEMEENTE_ORDER.map(gemeente => [gemeente, gemTot[gemeente] || 0]);
+
+  const clusterNodes = layoutNodes(clusterItems, X1);
+  const longNodes = layoutNodes(longItems, X2);
+  const gemeenteNodes = layoutNodes(gemeenteItems, X3);
+
+  function byName(arr, name){
+    return arr.find(n => n.name === name);
+  }
+
+  function truncate(label, maxLength){
+    return label.length > maxLength ? label.slice(0, maxLength - 1) + '…' : label;
+  }
+
+  function ribbon(x1, y1, h1, x2, y2, h2, color, alpha, label, n){
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const mx = (x1 + x2) / 2;
+
+    path.setAttribute(
+      'd',
+      `M${x1 + NODE_W},${y1} ` +
+      `C${mx},${y1} ${mx},${y2} ${x2},${y2} ` +
+      `L${x2},${y2 + h2} ` +
+      `C${mx},${y2 + h2} ${mx},${y1 + h1} ${x1 + NODE_W},${y1 + h1} Z`
+    );
+
+    path.setAttribute('fill', color);
+    path.setAttribute('opacity', alpha.toString());
+    path.style.transition = 'opacity .18s';
+    path.style.cursor = 'default';
+
+    path.addEventListener('mouseenter', e => {
+      path.setAttribute('opacity', '0.72');
+      showTT(e, `<strong>${label}</strong>${n} behoeften`);
+    });
+
+    path.addEventListener('mousemove', moveTT);
+
+    path.addEventListener('mouseleave', () => {
+      path.setAttribute('opacity', alpha.toString());
+      hideTT();
+    });
+
+    svg.insertBefore(path, svg.firstChild);
+  }
+
+  // Cluster -> Longlist offsets
+  const clusterLongOffsets = {};
+  const longClusterOffsets = {};
+
+  clusterNodes.forEach(c => clusterLongOffsets[c.name] = c.y);
+  longNodes.forEach(l => longClusterOffsets[l.name] = l.y);
+
+  Object.entries(SK_CLUSTER_LONG).forEach(([cluster, longlists]) => {
+    const cn = byName(clusterNodes, cluster);
+    if (!cn) return;
+
+    Object.entries(longlists).forEach(([longlist, n]) => {
+      const ln = byName(longNodes, longlist);
+      if (!ln || !n) return;
+
+      const hC = cn.h * (n / cn.n);
+      const hL = ln.h * (n / (longTot[longlist] || 1));
+
+      ribbon(
+        cn.x,
+        clusterLongOffsets[cluster],
+        hC,
+        ln.x,
+        longClusterOffsets[longlist],
+        hL,
+        clusterColor(cluster),
+        0.30,
+        `${clusterLabel(cluster)} → ${longlist}`,
+        n
+      );
+
+      clusterLongOffsets[cluster] += hC;
+      longClusterOffsets[longlist] += hL;
+    });
+  });
+
+  // Longlist -> Gemeente offsets
+  const longGemOffsets = {};
+  const gemLongOffsets = {};
+
+  longNodes.forEach(l => longGemOffsets[l.name] = l.y);
+  gemeenteNodes.forEach(g => gemLongOffsets[g.name] = g.y);
+
+  Object.entries(SK_LONG_GEM).forEach(([longlist, gemeenten]) => {
+    const ln = byName(longNodes, longlist);
+    if (!ln) return;
+
+    Object.entries(gemeenten).forEach(([gemeente, n]) => {
+      const gn = byName(gemeenteNodes, gemeente);
+      if (!gn || !n) return;
+
+      const hL = ln.h * (n / (longTot[longlist] || 1));
+      const hG = gn.h * (n / (gemTot[gemeente] || 1));
+
+      // Colour right-side ribbons by the dominant cluster linked to this longlist
+      let dominantCluster = null;
+      let dominantN = -1;
+
+      Object.entries(SK_CLUSTER_LONG).forEach(([cluster, longlists]) => {
+        const value = longlists[longlist] || 0;
+
+        if (value > dominantN) {
+          dominantN = value;
+          dominantCluster = cluster;
+        }
+      });
+
+      ribbon(
+        ln.x,
+        longGemOffsets[longlist],
+        hL,
+        gn.x,
+        gemLongOffsets[gemeente],
+        hG,
+        clusterColor(dominantCluster),
+        0.22,
+        `${longlist} → ${gemeente}`,
+        n
+      );
+
+      longGemOffsets[longlist] += hL;
+      gemLongOffsets[gemeente] += hG;
+    });
+  });
+
+  function drawNodes(nodes, colorFn, labelRight, labelFn, maxLength){
+    nodes.forEach(n => {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+
+      rect.setAttribute('x', n.x);
+      rect.setAttribute('y', n.y);
+      rect.setAttribute('width', NODE_W);
+      rect.setAttribute('height', Math.max(2, n.h));
+      rect.setAttribute('fill', colorFn(n.name));
+      rect.setAttribute('rx', '2');
+      rect.style.cursor = 'pointer';
+
+      rect.addEventListener('mouseenter', e => {
+        showTT(e, `<strong>${labelFn(n.name)}</strong>${n.n} behoeften`);
+      });
+
+      rect.addEventListener('mousemove', moveTT);
+      rect.addEventListener('mouseleave', hideTT);
+
+      svg.appendChild(rect);
+
+      if (n.h > 6) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+        text.setAttribute('x', labelRight ? n.x + NODE_W + 6 : n.x - 6);
+        text.setAttribute('y', n.y + Math.min(n.h / 2 + 4, 14));
+        text.setAttribute('text-anchor', labelRight ? 'start' : 'end');
+        text.setAttribute('fill', '#1C1916');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('font-family', 'DM Sans,sans-serif');
+        text.setAttribute('pointer-events', 'none');
+
+        const label = labelFn(n.name);
+        text.textContent = truncate(label, maxLength);
+
+        svg.appendChild(text);
+      }
+    });
+  }
+
+  drawNodes(
+    clusterNodes,
+    name => clusterColor(name),
+    false,
+    name => clusterLabel(name),
+    34
+  );
+
+  drawNodes(
+    longNodes,
+    () => '#1C1916',
+    false,
+    name => name,
+    42
+  );
+
+  drawNodes(
+    gemeenteNodes,
+    () => '#6B6560',
+    true,
+    name => name,
+    28
+  );
+
+  [
+    ['Strategisch cluster', X1 - 10, 'end'],
+    ['Longlist / behoeften', X2 - 10, 'end'],
+    ['Gemeente', X3 + NODE_W + 6, 'start']
+  ].forEach(([label, x, anchor]) => {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+    text.setAttribute('x', x);
+    text.setAttribute('y', 14);
+    text.setAttribute('text-anchor', anchor);
+    text.setAttribute('fill', '#6B6560');
+    text.setAttribute('font-size', '10');
+    text.setAttribute('font-family', 'DM Sans,sans-serif');
+    text.setAttribute('font-weight', '600');
+    text.setAttribute('letter-spacing', '0.08em');
+
+    text.textContent = label.toUpperCase();
+
+    svg.appendChild(text);
+  });
+})();
+</script>
+
+</body>
+</html>
