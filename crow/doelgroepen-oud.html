@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Doelgroepen Matrix</title>
+
+<style>
+body {
+    font-family: "Avenir Next", Avenir, sans-serif;
+    background:#fff;
+    padding:20px;
+    color:#2a1b22;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border:1px solid #ddd;
+    padding:10px;
+    vertical-align:top;
+}
+
+th {
+    background: rgba(84,8,51,0.08);
+    color:#540833;
+    font-weight:600;
+}
+
+/* WAAR column (vertical header style) */
+.waar-header {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    background:#ffffff;
+    color:#5cc7a7;
+    font-weight:700;
+    text-align:center;
+    min-width:40px;
+}
+
+.row-label{
+    background: #a0e1cb;
+    color:#540833;
+    font-weight:700;
+    text-align:center;
+    min-width:40px;
+}
+.bubble {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    color:white;
+    margin:2px;
+    font-size:12px;
+}
+
+.Prioriteren { background:#993C1D; }
+.Doseren { background:#D85A30; }
+.Weren { background:#F0997B; }
+
+.icon { width:12px;height:12px; }
+
+.legend {
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+.legend .leg {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-size:12px;
+    border:1px solid transparent;
+    background:#fff;
+}
+
+.legend .Prioriteren.active {
+    background:#993C1D;
+    color:#fff;
+    border-color:#993C1D;
+}
+
+.legend .Doseren.active {
+    background:#D85A30;
+    color:#fff;
+    border-color:#D85A30;
+}
+
+.legend .Weren.active {
+    background:#F0997B;
+    color:#fff;
+    border-color:#F0997B;
+}
+
+.legend .Prioriteren {
+    background:#fff;
+    color:#993C1D;
+    border-color:#993C1D;
+}
+
+.legend .Doseren {
+    background:#fff;
+    color:#D85A30;
+    border-color:#D85A30;
+}
+
+.legend .Weren {
+    background:#fff;
+    color:#F0997B;
+    border-color:#F0997B;
+}
+
+.legend .reset {
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid #ddd;
+    background:#fff;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="legend">
+    <button class="leg Prioriteren active" onclick="toggle('Prioriteren',this)">▲ Prioriteren</button>
+    <button class="leg Doseren active" onclick="toggle('Doseren',this)">⇄ Doseren</button>
+    <button class="leg Weren active" onclick="toggle('Weren',this)">✕ Weren</button>
+    <button class="reset" onclick="resetAll()">Reset</button>
+</div>
+
+<table>
+<tr>
+<th class="waar-header" rowspan="12">
+    WAAR?
+</th>
+
+<th></th>
+<th colspan="4" style="text-align:center;color:#ee90b3;background:#ffffff;">
+    WANNEER?
+</th>
+</tr><tr><th></th><th style="text-align:center;background:#f4bfd1;color:#540833;"">Altijd (24/7)</th><th style="text-align:center;background:#f4bfd1;color:#540833;"">Venstertijden</th><th style="text-align:center;background:#f4bfd1;color:#540833;"">Spitsuren</th><th style="text-align:center;background:#f4bfd1;color:#540833;"">Nacht / Avonduren</th></tr><tr><th class='row-label'>Historisch / stedelijk centrum</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                OV en gedeelde mobiliteit
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                langzaamverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Bevoorraders, Bouwverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Essentiële werknemers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Schone voertuigen
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Gemotoriseerde tweewielers
+            </div>
+            </td><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bevoorraders, Bouwverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Schone voertuigen
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bezorgers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Gemotoriseerde tweewielers
+            </div>
+            </td><td>
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            </td></tr><tr><th class='row-label'>Natuur- en groenblauwe structuren</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Essentiële werknemers
+            </div>
+            </td><td></td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Bestemmingsverkeer
+            </div>
+            </td><td></td></tr><tr><th class='row-label'>OV-knooppuntomgeving / stationszone</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Doorgaand verkeer
+            </div>
+            </td><td></td><td></td><td></td></tr><tr><th class='row-label'>Alle gebieden</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Eerstehulpverleners
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Essentiële werknemers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Bezorgers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Schone voertuigen
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bevoorraders, Bouwverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                OV en gedeelde mobiliteit
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Gemotoriseerde tweewielers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            </td><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Essentiële werknemers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bevoorraders, Bouwverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                OV en gedeelde mobiliteit
+            </div>
+            </td><td>
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Automobilisten
+            </div>
+            </td><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            </td></tr><tr><th class='row-label'>Woonwijken</th><td>
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Essentiële werknemers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                langzaamverkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Essentiële werknemers
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bevoorraders, Bouwverkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            </td></tr><tr><th class='row-label'>Landelijk gebied</th><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Kwetsbare groepen
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            </td><td></td><td></td></tr><tr><th class='row-label'>Binnenstedelijke Werkgebieden</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bestemmingsverkeer
+            </div>
+            </td><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Bezorgers
+            </div>
+            </td><td></td><td></td></tr><tr><th class='row-label'>Agrarisch gebied</th><td>
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            </td><td></td><td></td><td></td></tr><tr><th class='row-label'>Grootschalig bedrijventerrein</th><td>
+            <div class="bubble Doseren" data-type="Doseren">
+                <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            </td><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Vervuilend, zwaar verkeer
+            </div>
+            </td><td></td><td></td></tr><tr><th class='row-label'>Campussen / innovatiegebieden</th><td>
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Automobilisten
+            </div>
+            
+            <div class="bubble Prioriteren" data-type="Prioriteren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                Langzaamverkeer
+            </div>
+            
+            <div class="bubble Weren" data-type="Weren">
+                <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                Doorgaand verkeer
+            </div>
+            </td><td></td><td></td><td></td></tr>
+</table>
+
+<script>
+let active = new Set(["Prioriteren","Doseren","Weren"]);
+
+function apply(){
+    document.querySelectorAll(".bubble").forEach(b=>{
+        const t = b.getAttribute("data-type");
+        b.style.display = active.has(t) ? "inline-flex" : "none";
+    });
+}
+
+function toggle(type,btn){
+    if(active.has(type)){
+        active.delete(type);
+        btn.classList.remove("active");
+    } else {
+        active.add(type);
+        btn.classList.add("active");
+    }
+    apply();
+}
+
+function resetAll(){
+    active = new Set(["Prioriteren","Doseren","Weren"]);
+    document.querySelectorAll(".legend button").forEach(b=>{
+        if(!b.classList.contains("reset")){
+            b.classList.add("active");
+        }
+    });
+    apply();
+}
+
+apply();
+</script>
+
+</body>
+</html>
