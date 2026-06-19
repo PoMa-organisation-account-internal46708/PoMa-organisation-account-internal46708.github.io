@@ -77,12 +77,13 @@ th {
     border-radius:999px;
     color:white;
     margin:2px;
-    font-size:13px;
+    font-size:8px;
 }
 
 .bubble.Weren {
     color: #904620;
 }
+
 
 .Prioriteren { background:#904620; }
 .Doseren { background:#dc7527; }
@@ -94,6 +95,7 @@ th {
     gap:10px;
     margin-bottom:14px;
     flex-wrap:wrap;
+    justify-content: center;
 }
 
 .legend .leg {
@@ -164,7 +166,7 @@ th {
 
 <div class="legend">
     <button class="leg Prioriteren active" onclick="toggle('Prioriteren',this)">▲ Prioriteren</button>
-    <button class="leg Doseren active" onclick="toggle('Doseren',this)">
+    <button class="leg Doseren" onclick="toggle('Doseren',this)">
         <svg width="12" height="12" viewBox="0 0 12 10">
             <path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9"
                   stroke="currentColor"
@@ -173,8 +175,8 @@ th {
         </svg>
         Doseren
     </button>
-    <button class="leg Weren active" onclick="toggle('Weren',this)">✕ Weren</button>
-    <button class="reset" onclick="resetAll()">Resetten</button>
+    <button class="leg Weren" onclick="toggle('Weren',this)">✕ Weren</button>
+    <button class="reset" onclick="resetAll()">Alles selecteren</button>
 </div>
 
 <table>
@@ -194,14 +196,14 @@ th {
 </colgroup>
 
 <tr>
-<th style="background:#DEDEDE; text-align:center; padding:10px;">
-
+<th style="background:#ffffff; text-align:center; padding:10px;">
+    
     <div style="font-size:18px; font-weight:700; line-height:1.2; color:#236063;">
-        WAAR
+         
     </div>
-
+    
     <div style="font-size:18px; font-weight:700; line-height:1.2; color:#25518a; margin-top:2px;">
-        WANNEER
+         
     </div>
 
 </th>
@@ -215,7 +217,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Alle gebieden
         </div>
     </th>
@@ -229,7 +231,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Historisch / stedelijk centrum
         </div>
     </th>
@@ -243,7 +245,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             OV-knooppuntomgeving / stationszone
         </div>
     </th>
@@ -257,7 +259,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Woonwijken
         </div>
     </th>
@@ -279,7 +281,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Agrarisch gebied
         </div>
     </th>
@@ -300,7 +302,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Natuur- en groenblauwe structuren
         </div>
     </th>
@@ -314,7 +316,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Landelijk gebied
         </div>
     </th>
@@ -328,7 +330,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Binnenstedelijke Werkgebieden
         </div>
     </th>
@@ -342,7 +344,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Campussen / innovatiegebieden
         </div>
     </th>
@@ -360,7 +362,7 @@ th {
         
         </div>
 
-        <div style="font-size:16px; font-weight:900; text-align:center; line-height:1.2;">
+        <div style="font-size:12px; font-weight:900; text-align:center; line-height:1.2;">
             Grootschalig bedrijventerrein
         </div>
     </th>
@@ -370,8 +372,8 @@ th {
                     Automobilisten
                 </div>
                 
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                <div class="bubble Doseren" data-type="Doseren">
+                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Bestemmingsverkeer
                 </div>
                 
@@ -380,13 +382,13 @@ th {
                     Bevoorraders, Bouwverkeer
                 </div>
                 
-                <div class="bubble Doseren" data-type="Doseren">
-                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                <div class="bubble Prioriteren" data-type="Prioriteren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Bezorgers
                 </div>
                 
-                <div class="bubble Weren" data-type="Weren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                <div class="bubble Doseren" data-type="Doseren">
+                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Doorgaand verkeer
                 </div>
                 
@@ -425,8 +427,8 @@ th {
                     Vervuilend, zwaar verkeer
                 </div>
                 </td><td>
-                <div class="bubble Doseren" data-type="Doseren">
-                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                <div class="bubble Weren" data-type="Weren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Automobilisten
                 </div>
                 
@@ -460,14 +462,14 @@ th {
                     Kwetsbare groepen
                 </div>
                 
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
-                    Langzaamverkeer
-                </div>
-                
                 <div class="bubble Weren" data-type="Weren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     langzaamverkeer
+                </div>
+                
+                <div class="bubble Prioriteren" data-type="Prioriteren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                    Langzaamverkeer
                 </div>
                 
                 <div class="bubble Prioriteren" data-type="Prioriteren">
@@ -540,8 +542,8 @@ th {
                     Vervuilend, zwaar verkeer
                 </div>
                 </td><td>
-                <div class="bubble Doseren" data-type="Doseren">
-                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                <div class="bubble Prioriteren" data-type="Prioriteren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Bestemmingsverkeer
                 </div>
                 
@@ -560,8 +562,8 @@ th {
                     Langzaamverkeer
                 </div>
                 
-                <div class="bubble Weren" data-type="Weren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
+                <div class="bubble Doseren" data-type="Doseren">
+                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Vervuilend, zwaar verkeer
                 </div>
                 </td><td>
@@ -570,8 +572,8 @@ th {
                     Automobilisten
                 </div>
                 
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                <div class="bubble Doseren" data-type="Doseren">
+                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Bestemmingsverkeer
                 </div>
                 
@@ -585,8 +587,8 @@ th {
                     Kwetsbare groepen
                 </div>
                 
-                <div class="bubble Doseren" data-type="Doseren">
-                    <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                <div class="bubble Weren" data-type="Weren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Vervuilend, zwaar verkeer
                 </div>
                 </td><td>
@@ -630,8 +632,8 @@ th {
                     OV en gedeelde mobiliteit
                 </div>
                 
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                <div class="bubble Weren" data-type="Weren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Vervuilend, zwaar verkeer
                 </div>
                 </td><td>
@@ -725,8 +727,8 @@ th {
                     Automobilisten
                 </div>
                 
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
+                <div class="bubble Weren" data-type="Weren">
+                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Kwetsbare groepen
                 </div>
                 
@@ -763,7 +765,7 @@ th {
 </table>
 
 <script>
-let active = new Set(["Prioriteren","Doseren","Weren"]);
+let active = new Set(["Prioriteren"]);
 
 function apply(){
     document.querySelectorAll(".bubble").forEach(b=>{
@@ -785,7 +787,7 @@ function toggle(type,btn){
 
 function resetAll(){
     active = new Set(["Prioriteren","Doseren","Weren"]);
-
+    
     document.querySelectorAll(".bubble").forEach(b=>{
         b.style.display = "inline-flex";
     });
