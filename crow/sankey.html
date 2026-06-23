@@ -46,8 +46,8 @@ svg {
   cursor: pointer;
 }
 
-/* ---- popup ---- */
-#popup {
+/* ---- cluster popup ---- */
+#clusterPopup {
   position: absolute;
   display: none;
   background: #fff;
@@ -63,37 +63,56 @@ svg {
   z-index: 10;
 }
 
-#popup h3 {
+#clusterPopup h3 {
   margin: 0 0 6px 0;
   font-size: 13px;
   color: #111;
 }
 
-#popup .explanation {
+#clusterPopup .explanation {
   color: #555;
   margin-bottom: 8px;
 }
 
-#popup .stat {
+#clusterPopup .stat {
   margin-bottom: 4px;
   color: #333;
 }
 
-#popup .type-list {
+#clusterPopup .type-list {
   margin: 4px 0 0 12px;
   padding: 0;
   color: #444;
 }
 
-#popup .type-list li {
+#clusterPopup .type-list li {
   margin-bottom: 2px;
+}
+
+/* ---- hover popup ---- */
+#hoverPopup {
+  position: absolute;
+  display: none;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 1;
 }
 </style>
 </head>
 
 <body>
 
-<div id="popup"></div>
+<div id="clusterPopup"></div>
+<div id="hoverPopup"></div>
 <svg id="svg"></svg>
 
 <script>
@@ -111,12 +130,12 @@ const linksLG = [{"source": "Afschermen van de nachtelijke (verkeers)rust nabij 
 const colors         = {"C1": "#4E79A7", "C2": "#F28E2B", "C3": "#E15759", "C4": "#76B7B2", "C5": "#59A14F", "C6": "#EDC948", "C7": "#B07AA1", "C8": "#FF9DA7", "Outliers": "#9C9C9C"};
 const clusterNames   = {"C1": "Cluster 1: Bescherming Kwetsbare Natuurgebieden", "C2": "Cluster 2 Erfgoed- en Infrastructuurbescherming", "C3": "Cluster 3: Emissievrije en Gebundelde Stadslogistiek", "C4": "Cluster 4: Beheersen van Toerism en Recreatie", "C5": "Cluster 5: Bescherming van Leefkwaliteit in Woongebieden", "C6": "Cluster 6: Veiligheid van Kwetsbare Verkeersdeelnemers", "C7": "Cluster 7: Zorg en Inclusieve Nabijheid", "C8": "Cluster 8: Prioritering van Nood- en Hulpdiensten", "Outliers": "Outliers: geen cluster"};
 const clusterExpl    = {"C1": "Het waarborgen van toegang voor mensen die afhankelijk zijn van zorg aan huis, doelgroepenvervoer of fysieke ondersteuning bij verplaatsing. De rechtvaardiging is inclusief: een beleid dat mensen met een beperking of zorgbehoefte uitsluit van hun eigen buurt, is maatschappelijk onacceptabel en juridisch kwetsbaar. De uitdaging zit in de definitie van de doelgroep \u2014 zorgverlener, mantelzorger, cli\u00ebnt, leverancier van medische hulpmiddelen \u2014 en in de vraag hoe ontheffingen worden georganiseerd zonder dat het systeem volloopt met uitzonderingen.", "C2": "Het garanderen van snelle en ongehinderde doorgang voor brandweer, politie en ambulances, ook in gebieden met fysieke afsluitingen of camerasystemen. Dit klinkt vanzelfsprekend maar vraagt om concrete technische en organisatorische afspraken: wie beheert de toegangssystemen, wie heeft autorisatie om ze te openen, hoe snel reageert het systeem en wat gebeurt er als de verbinding wegvalt?", "C3": "Het weren van sluipverkeer en wijkvreemd verkeer uit woonstraten en -buurten. De maatregel is niet bedoeld om bewoners op te sluiten, maar om de straat terug te geven aan de mensen die er wonen. De afweging zit in de definitie van 'wijkvreemd': wie hoort er wel en wie niet, en hoe wordt dat handhaafbaar gemaakt zonder dat bewoners zelf de dupe worden van hun eigen maatregel?", "C4": "Het beschermen van voetgangers, fietsers en kinderen door gemotoriseerd verkeer te weren of te beperken op plekken waar die groepen dominant aanwezig zijn. Schoolstraten, fietsroutes, verblijfspleinen. De rechtvaardiging is sterk: kwetsbare verkeersdeelnemers kunnen zichzelf niet beschermen tegen snelheid en massa. Maar de maatregel vraagt om tijdgebonden of situatiegebonden logica \u2014 een schoolstraat is niet de hele dag een schoolstraat.", "C5": "Het sturen van bevoorrading via zero-emissiezones en geconsolideerde hubs, zodat de luchtkwaliteit in drukke verblijfsgebieden verbetert en het aantal vrachtwagenbewegingen afneemt. Dit is tegelijk een beschermingsmaatregel en een logistieke herorganisatie: de stad wordt beschermd, maar de bevoorrading moet doorgang vinden.", "C6": "Het weren van gemotoriseerd verkeer uit ecologisch gevoelige zones om biodiversiteit en rust te behouden. De rechtvaardiging ligt in de onomkeerbaarheid van ecologische schade: eenmaal verstoord, herstelt een biotoop niet vanzelf.", "C7": "Het weren of beperken van zwaar verkeer uit historische binnensteden en op kwetsbare infrastructuur. Trillingen, uitlaatgassen en de fysieke massa van voertuigen tasten monumenten, bestrating en bruggen aan op een manier die niet zichtbaar is totdat de schade al groot is.", "C8": "Het reguleren van bezoekersstromen naar populaire bestemmingen om overlast voor bewoners en schade aan het gebied te beperken. De spanning is hier scherp: toerisme en recreatie zijn economisch waardevol, maar ongereguleerd gebruik ondermijnt precies de kwaliteiten die bezoekers aantrekken.", "Outliers": "Behoeften die specifiek zijn voor \u00e9\u00e9n gemeente of situatie."};
-const clusterPopup   = {"C1": {"types": [], "n_behoeften": 12, "n_docs": 12}, "C2": {"types": [], "n_behoeften": 7, "n_docs": 7}, "C3": {"types": [], "n_behoeften": 26, "n_docs": 22}, "C4": {"types": [], "n_behoeften": 10, "n_docs": 10}, "C5": {"types": [], "n_behoeften": 28, "n_docs": 27}, "C6": {"types": [], "n_behoeften": 20, "n_docs": 20}, "C7": {"types": [], "n_behoeften": 23, "n_docs": 22}, "C8": {"types": [], "n_behoeften": 10, "n_docs": 9}, "Outliers": {"types": [], "n_behoeften": 29, "n_docs": 28}};
+const clusterPopupData   = {"C1": {"types": [], "n_behoeften": 12, "n_docs": 12}, "C2": {"types": [], "n_behoeften": 7, "n_docs": 7}, "C3": {"types": [], "n_behoeften": 26, "n_docs": 22}, "C4": {"types": [], "n_behoeften": 10, "n_docs": 10}, "C5": {"types": [], "n_behoeften": 28, "n_docs": 27}, "C6": {"types": [], "n_behoeften": 20, "n_docs": 20}, "C7": {"types": [], "n_behoeften": 23, "n_docs": 22}, "C8": {"types": [], "n_behoeften": 10, "n_docs": 9}, "Outliers": {"types": [], "n_behoeften": 29, "n_docs": 28}};
 
 const svg    = document.getElementById("svg");
-const popup  = document.getElementById("popup");
+const clusterPopup = document.getElementById("clusterPopup");
+const hoverPopup   = document.getElementById("hoverPopup");
 let selectedCluster = null;
-let popupMode = "none"; // "cluster" | "tooltip" | "none"
 function isActiveLongNode(n) {
   if (!selectedCluster) return true;
   return longToCluster[n.name] === selectedCluster;
@@ -144,14 +163,13 @@ function find(nodes, name) {
 function showPopup(clusterCode, svgRect) {
   const name  = clusterNames[clusterCode]  || clusterCode;
   const expl  = clusterExpl[clusterCode]   || "";
-  const data  = clusterPopup[clusterCode]  || {};
+  const data  = clusterPopupData[clusterCode]  || {};
   const types = (data.types || []);
   const clusterColor = colors[clusterCode] || "#333";
-  popupMode = "cluster";
 
   const typeItems = types.map(t => "<li>" + t + "</li>").join("");
 
-  popup.innerHTML =
+  clusterPopup.innerHTML =
     "<h3>" + name + "</h3>" +
     "<div class='explanation'>" + expl + "</div>" +
     "<div class='stat'><b>Behoeften:</b> " + (data.n_behoeften || 0) + "</div>" +
@@ -159,39 +177,40 @@ function showPopup(clusterCode, svgRect) {
     (types.length
       ? "<div class='stat'><b>Type Behoeften:</b><ul class='type-list'>" + typeItems + "</ul></div>"
       : "");
-  popup.style.border = "2px solid " + clusterColor;
-  popup.style.background = clusterColor + "10";
 
-  // position popup to the left of the SVG element, aligned to click y
-  const svgEl   = document.getElementById("svg");
-  const svgBox  = svgEl.getBoundingClientRect();
+  clusterPopup.style.border = "2px solid " + clusterColor;
+  clusterPopup.style.background = clusterColor + "10";
 
-  // top of popup = centre of the clicked node rect, clamped to viewport
-  const nodeScreenY = svgBox.top + svgRect.top * (svgBox.height / H);
-  const popupTop = Math.min(
-    nodeScreenY,
-    window.innerHeight - popup.offsetHeight - 8
-  );
+  const svgEl  = document.getElementById("svg");
+  const svgBox = svgEl.getBoundingClientRect();
 
-  popup.style.left = (svgBox.left + -50) + "px";
-  popup.style.top  = (svgBox.top + 10) + "px";
-  popup.style.display = "block";
+  clusterPopup.style.left = (svgBox.left - 50) + "px";
+  clusterPopup.style.top  = (svgBox.top + 10) + "px";
+  clusterPopup.style.display = "block";
 }
 
-function showTooltip(text, x, y) {
-  popup.innerHTML = "<div style='font-size:12px;color:#333;'>" + text + "</div>";
-  popup.style.left = (x + 10) + "px";
-  popup.style.top = (y + 10) + "px";
-  popup.style.opacity = "1";
-  popup.style.display = "block";
-  if (popupMode !== "cluster") popupMode = "tooltip";
+
+function showTooltip(text, x, y, color = "#333") {
+  hoverPopup.innerHTML =
+    "<div style='color:" + color + "; font-weight:600'>" +
+    text +
+    "</div>";
+
+  hoverPopup.style.left = (x + 10) + "px";
+  hoverPopup.style.top = (y + 10) + "px";
+  hoverPopup.style.border = "2px solid " + color;
+  hoverPopup.style.background = "#ffffff";
+  hoverPopup.style.opacity = "1";
+  hoverPopup.style.display = "block";
 }
 
-function hidePopup() {
-  if (popupMode === "cluster" && !force) return;
-  popup.style.display = "none";
+function hideHoverPopup() {
+  hoverPopup.style.display = "none";
 }
 
+function hideClusterPopup() {
+  clusterPopup.style.display = "none";
+}
 /* =========================
    HIGHLIGHT / RESET
    ========================= */
@@ -338,15 +357,12 @@ function drawClusterNode(n) {
   if (!selectedCluster) resetHighlight();
   });
   r.addEventListener("click", (e) => {
-    e.stopPropagation();
-    showPopup(n.name, n);
+  e.stopPropagation();
 
-    /* ADDED */
-    selectedCluster = n.name;
-    highlightCluster(n.name);
-    /* ADD THIS */
-    popupMode = "cluster";
-  });
+  selectedCluster = n.name;
+  showPopup(n.name, n);
+  highlightCluster(n.name);
+});
 
   svg.appendChild(r);
   nodeEls[n.name] = r;
@@ -368,6 +384,11 @@ function drawClusterNode(n) {
   });
 }
 
+function resetPopupStyle() {
+  popup.style.opacity = "1";
+  popup.style.filter = "none";
+  popup.style.background = "#ffffff";
+}
 function drawLongNode(n) {
   const r = el("rect");
   r.setAttribute("x", n.x);
@@ -378,7 +399,6 @@ function drawLongNode(n) {
   r.setAttribute("rx", 2);
   r.setAttribute("class", "node");
   r.addEventListener("mouseover", (e) => {
-
   // 🚫 block hover if not in selected cluster
   if (selectedCluster && !isActiveLongNode(n)) return;
 
@@ -390,25 +410,16 @@ function drawLongNode(n) {
   r.setAttribute("fill", color);
   r.setAttribute("opacity", 1);
 
-  popup.innerHTML =
-    "<div style='color:" + color + "; font-weight:600'>" +
-    n.name +
-    "</div>";
-
-  popup.style.display = "block";
-  popup.style.left = (e.clientX + 10) + "px";
-  popup.style.top = (e.clientY + 10) + "px";
+  showTooltip(n.name, e.clientX, e.clientY, color);
 });
-  r.addEventListener("mouseout", () => {
+r.addEventListener("mouseout", () => {
 
   if (selectedCluster && !isActiveLongNode(n)) return;
 
   r.setAttribute("fill", "#B0B0B0");
   r.setAttribute("opacity", 1);
 
-  if (popupMode !== "tooltip") {
-  popup.style.display = "none";
-}
+  hideHoverPopup();
 
   if (!selectedCluster) resetHighlight();
 });
@@ -470,9 +481,10 @@ svg.addEventListener("click", (e) => {
   if (e.target !== svg) return;
 
   selectedCluster = null;
-  popupMode = "none";
 
-  popup.style.display = "none";
+  hideClusterPopup();
+  hideHoverPopup();
+
   resetHighlight();
 });
 
