@@ -20,10 +20,11 @@ body {
 .app {
     width: 100vw;
     max-width: 100vw;
-    aspect-ratio: 2.5 / 1;
     display: flex;
     flex-direction: column;
-    overflow: auto;
+    overflow: visible;
+    height: auto;
+    min-height: 0;
 }
 
 /* TABLE */
@@ -146,8 +147,8 @@ th.col-header {
 }
 
 .legend .time-filter {
-    border:1px solid #25518a;
-    color:#25518a;
+    border:1px solid #b0c6ea;
+    color:#b0c6ea;
 }
 
 .legend .reset {
@@ -178,9 +179,9 @@ th.col-header {
 }
 
 .legend .time-filter.active {
-    background:#25518a;
-    color:#fff;
-    border-color:#25518a;
+    background:#b0c6ea;
+    color:#25518a;
+    border-color:#b0c6ea;
 }
 
 /* hover */
