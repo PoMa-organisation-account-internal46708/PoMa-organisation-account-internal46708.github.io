@@ -10,7 +10,7 @@
 <style>
 body {
     font-family: "Inter", sans-serif;
-    background:#ffffff;
+    background:transparent;
     margin:0;
     padding:0;
     color:#2a1b22;
@@ -19,7 +19,7 @@ body {
 /* FULL CANVAS */
 .app {
     width: 100vw;
-    max-width: 100vwl
+    max-width: 100vw;
     aspect-ratio: 2.5 / 1;
     display: flex;
     flex-direction: column;
@@ -62,10 +62,15 @@ th {
 }
 
 .icon-box {
-    height: 55px;
+    height: 30px;
     display:flex;
     align-items:center;
     justify-content:center;
+}
+
+.icon-box svg {
+    width: 28px;
+    height: 28px;
 }
 
 /* bubbles */
@@ -77,17 +82,13 @@ th {
     border-radius:999px;
     color:white;
     margin:2px;
-    font-size:8px;
-}
-
-.bubble.Weren {
-    color: #904620;
+    font-size:11px;
 }
 
 
-.Prioriteren { background:#904620; }
-.Doseren { background:#dc7527; }
-.Weren { background:#f6c987; }
+.Prioriteren { background:#D4622A; }
+.Doseren { background:#F2A96A; }
+.Weren { background:#FAC88A; }
 
 /* legend */
 .legend {
@@ -107,9 +108,29 @@ th {
     cursor:pointer;
     font-size:14px;
     font-weight:500;
-    border:1px solid transparent;
-    background:#ffffff;
+    background:transparent;
     transition: all 0.2s ease;
+}
+
+/* inactive legend outlines */
+.legend .Prioriteren {
+    border:1px solid #D4622A;
+    color:#D4622A;
+}
+
+.legend .Doseren {
+    border:1px solid #F2A96A;
+    color:#F2A96A;
+}
+
+.legend .Weren {
+    border:1px solid #FAC88A;
+    color:#FAC88A;
+}
+
+.legend .time-filter {
+    border:1px solid #25518a;
+    color:#25518a;
 }
 
 .legend .reset {
@@ -122,21 +143,27 @@ th {
 
 /* active states */
 .legend .Prioriteren.active {
-    background:#904620;
-    color:#ffffff;
-    border-color:#904620;
+    background:#D4622A;
+    color:#fff;
+    border-color:#D4622A;
 }
 
 .legend .Doseren.active {
-    background:#dc7527;
-    color:#ffffff;
-    border-color:#dc7527;
+    background:#F2A96A;
+    color:#fff;
+    border-color:#F2A96A;
 }
 
 .legend .Weren.active {
-    background:#f6c987;
-    color:#904620;
-    border-color:#f6c987;
+    background:#FAC88A;
+    color:#fff;
+    border-color:#FAC88A;
+}
+
+.legend .time-filter.active {
+    background:#25518a;
+    color:#fff;
+    border-color:#25518a;
 }
 
 /* hover */
@@ -165,8 +192,8 @@ th {
 </body>
 
 <div class="legend">
-    <button class="leg Prioriteren active" onclick="toggle('Prioriteren',this)">▲ Prioriteren</button>
-    <button class="leg Doseren" onclick="toggle('Doseren',this)">
+    <button class="leg Prioriteren active" onclick="toggleStatus('Prioriteren',this)">▲ Prioriteren</button>
+    <button class="leg Doseren active" onclick="toggleStatus('Doseren',this)">
         <svg width="12" height="12" viewBox="0 0 12 10">
             <path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9"
                   stroke="currentColor"
@@ -175,8 +202,14 @@ th {
         </svg>
         Doseren
     </button>
-    <button class="leg Weren" onclick="toggle('Weren',this)">✕ Weren</button>
-    <button class="reset" onclick="resetAll()">Alles selecteren</button>
+    <button class="leg Weren active" onclick="toggleStatus('Weren',this)">✕ Weren</button>
+</div>
+
+<div class="legend">
+    <button class="leg time-filter" onclick="toggleWhen('Venstertijden',this)">Venstertijden</button>
+    <button class="leg time-filter" onclick="toggleWhen('Spitsuren',this)">Spitsuren</button>
+    <button class="leg time-filter" onclick="toggleWhen('Nacht / Avonduren',this)">Nacht/avonduren</button>
+    <button class="leg time-filter active" onclick="toggleWhen('Altijd (24/7)',this)">Altijd (24/7)</button>
 </div>
 
 <table>
@@ -366,7 +399,7 @@ th {
             Grootschalig bedrijventerrein
         </div>
     </th>
-    </tr><tr><th class='col-header'>Altijd (24/7)</th><td>
+    </tr><tr data-when="Altijd (24/7)"><th class='col-header'>Altijd (24/7)</th><td>
                 <div class="bubble Prioriteren" data-type="Prioriteren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Automobilisten
@@ -464,11 +497,6 @@ th {
                 
                 <div class="bubble Weren" data-type="Weren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
-                    langzaamverkeer
-                </div>
-                
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Langzaamverkeer
                 </div>
                 
@@ -524,11 +552,6 @@ th {
                 
                 <div class="bubble Prioriteren" data-type="Prioriteren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
-                    langzaamverkeer
-                </div>
-                
-                <div class="bubble Prioriteren" data-type="Prioriteren">
-                    <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Langzaamverkeer
                 </div>
                 
@@ -616,7 +639,7 @@ th {
                     <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Vervuilend, zwaar verkeer
                 </div>
-                </td></tr><tr><th class='col-header'>Venstertijden</th><td>
+                </td></tr><tr data-when="Venstertijden"><th class='col-header'>Venstertijden</th><td>
                 <div class="bubble Prioriteren" data-type="Prioriteren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Bevoorraders, Bouwverkeer
@@ -711,7 +734,7 @@ th {
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Vervuilend, zwaar verkeer
                 </div>
-                </td></tr><tr><th class='col-header'>Spitsuren</th><td>
+                </td></tr><tr data-when="Spitsuren"><th class='col-header'>Spitsuren</th><td>
                 <div class="bubble Doseren" data-type="Doseren">
                     <svg width="12" height="12" viewBox="0 0 12 10"><path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9" stroke="white" stroke-width="1.2" fill="none"/></svg>
                     Automobilisten
@@ -741,7 +764,7 @@ th {
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="white" stroke-width="1.5"/></svg>
                     Bestemmingsverkeer
                 </div>
-                </td><td></td><td></td><td></td><td></td></tr><tr><th class='col-header'>Nacht / Avonduren</th><td>
+                </td><td></td><td></td><td></td><td></td></tr><tr data-when="Nacht / Avonduren"><th class='col-header'>Nacht / Avonduren</th><td>
                 <div class="bubble Prioriteren" data-type="Prioriteren">
                     <svg width="12" height="12" viewBox="0 0 10 10"><path d="M5 0 L10 10 L0 10 Z" fill="white"/></svg>
                     Kwetsbare groepen
@@ -765,37 +788,94 @@ th {
 </table>
 
 <script>
-let active = new Set(["Prioriteren"]);
+let activeStatus = new Set(["Prioriteren","Doseren","Weren"]);
+let activeWhen = new Set(["Altijd (24/7)"]);
 
 function apply(){
+    document.querySelectorAll("tr[data-when]").forEach(row=>{
+        const when = row.getAttribute("data-when");
+        row.style.display = activeWhen.has(when) ? "table-row" : "none";
+    });
+
     document.querySelectorAll(".bubble").forEach(b=>{
-        const t = b.getAttribute("data-type");
-        b.style.display = active.has(t) ? "inline-flex" : "none";
+        const status = b.getAttribute("data-type");
+        b.style.display = activeStatus.has(status) ? "inline-flex" : "none";
     });
 }
 
-function toggle(type,btn){
-    if(active.has(type)){
-        active.delete(type);
+function toggleStatus(type,btn){
+    if(activeStatus.has(type)){
+        activeStatus.delete(type);
         btn.classList.remove("active");
     } else {
-        active.add(type);
+        activeStatus.add(type);
         btn.classList.add("active");
     }
     apply();
 }
 
-function resetAll(){
-    active = new Set(["Prioriteren","Doseren","Weren"]);
-    
-    document.querySelectorAll(".bubble").forEach(b=>{
-        b.style.display = "inline-flex";
-    });
-    document.querySelectorAll(".legend .leg").forEach(btn=>{
+function toggleWhen(type,btn){
+    const always = "Altijd (24/7)";
+    const otherTimes = [
+        "Venstertijden",
+        "Spitsuren",
+        "Nacht / Avonduren"
+    ];
+
+    if(type === always){
+        activeWhen = new Set([always]);
+
+        document.querySelectorAll(".legend .time-filter").forEach(b=>{
+            b.classList.remove("active");
+        });
+
         btn.classList.add("active");
-    });
+    } else {
+        activeWhen.delete(always);
+
+        document.querySelectorAll(".legend .time-filter").forEach(b=>{
+            if(b.getAttribute("onclick").includes(always)){
+                b.classList.remove("active");
+            }
+        });
+
+        if(activeWhen.has(type)){
+            activeWhen.delete(type);
+            btn.classList.remove("active");
+        } else {
+            activeWhen.add(type);
+            btn.classList.add("active");
+        }
+
+        const hasOtherTime = otherTimes.some(t => activeWhen.has(t));
+
+        if(!hasOtherTime){
+            activeWhen = new Set([always]);
+
+            document.querySelectorAll(".legend .time-filter").forEach(b=>{
+                b.classList.remove("active");
+            });
+
+            document.querySelectorAll(".legend .time-filter").forEach(b=>{
+                if(b.getAttribute("onclick").includes(always)){
+                    b.classList.add("active");
+                }
+            });
+        }
+    }
+
+    apply();
 }
 
+function resetAll(){
+    activeStatus = new Set(["Prioriteren","Doseren","Weren"]);
+    
+    document.querySelectorAll(".legend .Prioriteren, .legend .Doseren, .legend .Weren").forEach(btn=>{
+        btn.classList.add("active");
+    });
+
+    apply();
+}
 
 apply();
 </script>
