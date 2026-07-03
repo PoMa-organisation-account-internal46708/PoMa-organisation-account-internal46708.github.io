@@ -185,6 +185,40 @@ th.col-header {
     border-color:#b0c6ea;
 }
 
+.legend-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 14px;
+    width: 100%;
+}
+
+.legend-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legend-group.left {
+    justify-content: flex-start;
+}
+
+.legend-group.right {
+    justify-content: flex-end;
+}
+
+.legend-label {
+    font-size: 12px;
+    color: #000;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.legend-row .legend {
+    margin-bottom: 0;
+}
+
 /* hover */
 .legend .leg:hover,
 .legend .reset:hover {
@@ -200,35 +234,37 @@ th.col-header {
 
 <div class="app">
 
-<div class="legend">
-</div>
+<div class="legend-row">
 
-<table>
-<colgroup>
+    <div class="legend-group left">
+        <span class="legend-label">Selecteer status:</span>
 
-</div>
+        <div class="legend">
+            <button class="leg Prioriteren active" onclick="toggleStatus('Prioriteren',this)">▲ Prioriteren</button>
+            <button class="leg Doseren active" onclick="toggleStatus('Doseren',this)">
+                <svg width="12" height="12" viewBox="0 0 12 10">
+                    <path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                          fill="none"/>
+                </svg>
+                Doseren
+            </button>
+            <button class="leg Weren active" onclick="toggleStatus('Weren',this)">✕ Weren</button>
+        </div>
+    </div>
 
-</body>
+    <div class="legend-group right">
+        <span class="legend-label">Selecteer wanneer:</span>
 
-<div class="legend">
-    <button class="leg Prioriteren active" onclick="toggleStatus('Prioriteren',this)">▲ Prioriteren</button>
-    <button class="leg Doseren active" onclick="toggleStatus('Doseren',this)">
-        <svg width="12" height="12" viewBox="0 0 12 10">
-            <path d="M1 5 L5 1 L9 5 M5 1 L5 9 M5 5 L9 9"
-                  stroke="currentColor"
-                  stroke-width="1.2"
-                  fill="none"/>
-        </svg>
-        Doseren
-    </button>
-    <button class="leg Weren active" onclick="toggleStatus('Weren',this)">✕ Weren</button>
-</div>
+        <div class="legend">
+            <button class="leg time-filter" onclick="toggleWhen('Venstertijden',this)">Venstertijden</button>
+            <button class="leg time-filter" onclick="toggleWhen('Spitsuren',this)">Spitsuren</button>
+            <button class="leg time-filter" onclick="toggleWhen('Nacht / Avonduren',this)">Nacht/avonduren</button>
+            <button class="leg time-filter active" onclick="toggleWhen('Altijd (24/7)',this)">Altijd (24/7)</button>
+        </div>
+    </div>
 
-<div class="legend">
-    <button class="leg time-filter" onclick="toggleWhen('Venstertijden',this)">Venstertijden</button>
-    <button class="leg time-filter" onclick="toggleWhen('Spitsuren',this)">Spitsuren</button>
-    <button class="leg time-filter" onclick="toggleWhen('Nacht / Avonduren',this)">Nacht/avonduren</button>
-    <button class="leg time-filter active" onclick="toggleWhen('Altijd (24/7)',this)">Altijd (24/7)</button>
 </div>
 
 <table>
@@ -898,6 +934,8 @@ function resetAll(){
 
 apply();
 </script>
+
+</div>
 
 </body>
 </html>
